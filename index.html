@@ -570,6 +570,10 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
   .lb-mode label{ cursor:pointer; }
   .lb-mode select{ font-family:'Special Elite', monospace; background:rgba(255,255,255,.35); border:none; border-bottom:2px solid #1b1512; color:#1b1512; }
   .stamp.small{ font-size:1.4rem; margin-top:12px; padding:6px 18px; }
+  .lb-voice{ display:flex; gap:10px; align-items:center; justify-content:center; margin-top:12px; font-size:.7rem; color:#5a4636; }
+  .lb-btn.on{ background:#7a1420; }
+  .lb-note{ text-align:center; color:#7a1420; font-weight:700; margin-top:6px; opacity:0; transition:opacity .3s; }
+  .lb-note.show{ opacity:1; }
   .lb-wait{ text-align:center; color:#5a4636; font-style:italic; margin-top:10px; }
   .lb-host:not(.hidden) ~ .lb-wait{ display:none; }
   #lobby .hidden{ display:none !important; }
@@ -640,6 +644,7 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
               <button id="lb-start" class="cta stamp small"><span>GO IN</span></button>
             </div>
             <div class="lb-wait" id="lb-wait">waiting for the host to open the door&hellip;</div>
+            <div class="lb-voice"><button id="lb-mic" class="lb-btn">voice: off</button><span id="lb-mic-note">survivors hear each other when close &mdash; Pun is not on the call</span></div>
             <button id="lb-leave" class="lb-btn ghost">leave</button>
           </div>
         </div>
@@ -779,25 +784,58 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
         if (r1>ROWS-2){ r1=ROWS-2; r0=Math.max(1,r1-h+1); }
         var room={r0:r0,c0:c0,r1:r1,c1:c1, cr:(r0+r1)>>1, cc:(c0+c1)>>1};
         for (var rr=r0;rr<=r1;rr++) for (var cc=c0;cc<=c1;cc++) grid[rr][cc]=1;
+        // a third of the rooms grow an ell — a bay off one corner, so the plan stops being all boxes
+        if (Math.random()<0.34 && w>=4 && h>=3){
+          var ew=ri(2,Math.max(2,w-2)), eh=ri(1,2), side=Math.random()<0.5;
+          var er0=side ? r1+1 : r0-eh, ec0=c0+ri(0,w-ew);
+          for (var rr2=er0; rr2<er0+eh; rr2++) for (var cc2=ec0; cc2<ec0+ew; cc2++) if (rr2>=1 && rr2<=ROWS-2) carve(rr2,cc2);
+        }
         rooms.push(room); lrow.push(room);
       }
       lattice.push(lrow);
     }
 
-    function corridor(a,b){
-      var r=a.cr, c=a.cc;
-      if (Math.random()<0.5){
-        while (c!==b.cc){ carve(r,c); c += (b.cc>c)?1:-1; }
-        while (r!==b.cr){ carve(r,c); r += (b.cr>r)?1:-1; }
-      } else {
-        while (r!==b.cr){ carve(r,c); r += (b.cr>r)?1:-1; }
-        while (c!==b.cc){ carve(r,c); c += (b.cc>c)?1:-1; }
-      }
-      carve(b.cr,b.cc);
+    function walk(r,c,tr,tc,wide){
+      // an L between two points; 'wide' carves a second cell alongside for a hall
+      var horizFirst=Math.random()<0.5;
+      function step(){ carve(r,c); if (wide) carve(r+(horizFirst?1:0), c+(horizFirst?0:1)); }
+      if (horizFirst){ while (c!==tc){ step(); c += (tc>c)?1:-1; } while (r!==tr){ step(); r += (tr>r)?1:-1; } }
+      else { while (r!==tr){ step(); r += (tr>r)?1:-1; } while (c!==tc){ step(); c += (tc>c)?1:-1; } }
+      carve(tr,tc);
     }
+    function corridor(a,b){
+      var wide=Math.random()<0.25;
+      if (Math.random()<0.4){
+        // dogleg: through a point off the straight line, so halls bend
+        var mr=Math.min(a.cr,b.cr)+ri(0,Math.abs(a.cr-b.cr)), mc=Math.min(a.cc,b.cc)+ri(0,Math.abs(a.cc-b.cc));
+        mr=Math.max(1,Math.min(ROWS-2,mr+ri(-1,1))); mc=Math.max(1,Math.min(COLS-2,mc+ri(-1,1)));
+        walk(a.cr,a.cc,mr,mc,wide); walk(mr,mc,b.cr,b.cc,wide);
+      } else walk(a.cr,a.cc,b.cr,b.cc,wide);
+    }
+    // every neighbouring pair is a possible corridor; a spanning tree keeps the
+    // house connected and about half the rest come back as loops. Fewer than
+    // before, so some rooms are dead ends and some are crossroads.
+    var edges=[];
     for (var y=0;y<SY;y++) for (var x=0;x<SX;x++){
-      if (x+1<SX) corridor(lattice[y][x], lattice[y][x+1]);
-      if (y+1<SY) corridor(lattice[y][x], lattice[y+1][x]);
+      if (x+1<SX) edges.push([y*SX+x, y*SX+x+1]);
+      if (y+1<SY) edges.push([y*SX+x, (y+1)*SX+x]);
+    }
+    shuffle(edges);
+    var parent=[]; for (var pi=0; pi<SX*SY; pi++) parent[pi]=pi;
+    function find(i){ while (parent[i]!==i){ parent[i]=parent[parent[i]]; i=parent[i]; } return i; }
+    for (var ei=0; ei<edges.length; ei++){
+      var e=edges[ei], ra=find(e[0]), rb=find(e[1]);
+      var A=lattice[(e[0]/SX)|0][e[0]%SX], B=lattice[(e[1]/SX)|0][e[1]%SX];
+      if (ra!==rb){ parent[ra]=rb; corridor(A,B); }
+      else if (Math.random()<0.55) corridor(A,B);
+    }
+    // a few closets: dead-end cells off corridors, somewhere to be cornered
+    for (var ck=0; ck<3+SX; ck++){
+      var cr=ri(2,ROWS-3), cc=ri(2,COLS-3);
+      if (grid[cr][cc]) continue;
+      var nbs=[[cr-1,cc],[cr+1,cc],[cr,cc-1],[cr,cc+1]], open=0;
+      for (var nb=0; nb<4; nb++) if (grid[nbs[nb][0]][nbs[nb][1]]) open++;
+      if (open===1) carve(cr,cc);
     }
 
     shuffle(rooms);   // so the start and the exit move around between runs
@@ -945,8 +983,16 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
         var a=an[used++];
         var ctr=cellCenter(a.r,a.c);
         var wx=ctr.x + a.nx*(CELL/2-0.42), wz=ctr.z + a.nz*(CELL/2-0.42);
-        hideSpots.push({ x:wx, z:wz, yaw:a.yaw, nx:a.nx, nz:a.nz });
+        hideSpots.push({ x:wx, z:wz, yaw:a.yaw, nx:a.nx, nz:a.nz, kind:'wardrobe' });
         addProp({ t:'wardrobe', x:wx, z:wz, yaw:a.yaw });
+        // big rooms get a second one on another wall
+        var area=(room.r1-room.r0+1)*(room.c1-room.c0+1);
+        if (area>=15 && used<an.length && Math.random()<0.7){
+          var a2=an[used++], c2=cellCenter(a2.r,a2.c);
+          var wx2=c2.x + a2.nx*(CELL/2-0.42), wz2=c2.z + a2.nz*(CELL/2-0.42);
+          if (dist(wx2,wz2,wx,wz)>2.5){ hideSpots.push({ x:wx2, z:wz2, yaw:a2.yaw, nx:a2.nx, nz:a2.nz, kind:'wardrobe' }); addProp({ t:'wardrobe', x:wx2, z:wz2, yaw:a2.yaw }); }
+          else used--;
+        }
       }
       // one room in three gets a hearth - the only other light in the house
       if (room!==startRoom && used<an.length && Math.random()<0.34){
@@ -978,7 +1024,11 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
       if (room===startRoom){
         addProp({ t:'rug', x:ic.x, z:ic.z, yaw:0 });
       } else if (w>=4 && h>=3 && roll<0.45){
-        addProp({ t:'bed', x:ic.x, z:ic.z, yaw: Math.random()<0.5?0:Math.PI/2 });
+        var byaw = Math.random()<0.5?0:Math.PI/2;
+        addProp({ t:'bed', x:ic.x, z:ic.z, yaw: byaw });
+        // you can get under it. The way in is from the long side.
+        var bn = byaw===0 ? [0, Math.random()<0.5?1:-1] : [Math.random()<0.5?1:-1, 0];
+        hideSpots.push({ x:ic.x, z:ic.z, yaw:byaw, nx:-bn[0], nz:-bn[1], kind:'bed' });
       } else if (roll<0.8){
         var tyaw = Math.random()<0.5?0:Math.PI/2;
         addProp({ t:'table', x:ic.x, z:ic.z, yaw:tyaw });
@@ -2842,7 +2892,7 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
       return;
     } else if (near){
       promptEl.classList.remove('hidden');
-      promptEl.innerHTML='<kbd>E</kbd> Hide in the wardrobe';
+      promptEl.innerHTML = near.kind==='bed' ? '<kbd>E</kbd> Get under the bed' : '<kbd>E</kbd> Hide in the wardrobe';
       if (actPressed){
         hidden=true; hideSpot=near;
         player.x=near.x - near.nx*0.15;
@@ -3000,14 +3050,14 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
   function initScares(){
     scares={
       // the watcher: a tall dark shape at the far end of a room that is gone by the time you get there
-      watcher:{ active:false, x:0, z:0, fade:0, next:18+Math.random()*16, seen:0 },
+      watcher:{ active:false, x:0, z:0, fade:0, next:9+Math.random()*10, seen:0 },
       // the dead that sit up as you pass
       risers:[],
       // wardrobes that get knocked on from the inside
       knocks:[]
     };
-    for (var i=0;i<bodies.length;i++) if (Math.random()<0.45) scares.risers.push({ x:bodies[i].x, z:bodies[i].z, yaw:bodies[i].yaw, t:-1, done:false });
-    for (var j=0;j<hideSpots.length;j++) if (Math.random()<0.5) scares.knocks.push({ h:hideSpots[j], done:false, t:-1 });
+    for (var i=0;i<bodies.length;i++) if (Math.random()<0.75) scares.risers.push({ x:bodies[i].x, z:bodies[i].z, yaw:bodies[i].yaw, t:-1, done:false });
+    for (var j=0;j<hideSpots.length;j++) if (hideSpots[j].kind!=='bed' && Math.random()<0.8) scares.knocks.push({ h:hideSpots[j], done:false, t:-1 });
   }
   function watcherSting(){
     if (!A.ctx) return;
@@ -3053,21 +3103,21 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
     var w=S.watcher;
     if (!w.active){
       w.next-=dt;
-      if (w.next<=0 && w.seen<4 && !hidden){
+      if (w.next<=0 && w.seen<7 && !hidden){
         for (var tries=0; tries<40; tries++){
           var oc=openCells[(Math.random()*openCells.length)|0], pc=cellCenter(oc.r,oc.c);
           var dd=dist(pc.x,pc.z,player.x,player.z);
-          if (dd>9 && dd<14 && !propHit(pc.x,pc.z,0.6) && dist(pc.x,pc.z,creature.x,creature.z)>6){
+          if (dd>6.5 && dd<12 && !propHit(pc.x,pc.z,0.6) && dist(pc.x,pc.z,creature.x,creature.z)>6){
             w.x=pc.x; w.z=pc.z; w.active=true; w.fade=0; w.seen++; break;
           }
         }
-        w.next=24+Math.random()*24;
+        w.next=16+Math.random()*18;
       }
     } else {
       w.fade=Math.min(1, w.fade+dt*0.9);
       var wd=dist(player.x,player.z,w.x,w.z);
-      if (wd<7.5 || wd>18 || hidden){
-        if (wd<7.5 && w.fade>0.5){ watcherSting(); lanternHealth=0.2; }
+      if (wd<5.5 || wd>18 || hidden){
+        if (wd<5.5 && w.fade>0.5){ watcherSting(); lanternHealth=0.15; frame.classList.add('shaking'); setTimeout(function(){ if(!(dread>0.6)) frame.classList.remove('shaking'); }, 320); }
         w.active=false; w.fade=0;
       }
     }
@@ -3087,7 +3137,7 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
       var kn=S.knocks[k];
       if (kn.done) continue;
       var kd=dist(player.x,player.z,kn.h.x,kn.h.z);
-      if (kd<4.5 && kd>1.6 && !hidden && Math.random()<dt*0.35){
+      if (kd<4.5 && kd>1.6 && !hidden && Math.random()<dt*0.6){
         kn.done=true; kn.t=0;
         knockSound(Math.max(-1,Math.min(1,(kn.h.x-player.x)/5)));
       }
@@ -3322,8 +3372,13 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
     } else if (hidden && hideSpot){
       // peering out through the crack: you watch the room, and it walks past
       var ix=-hideSpot.nx, iz=-hideSpot.nz;
-      eye=[hideSpot.x + ix*0.55, 1.62, hideSpot.z + iz*0.55];
-      target=[hideSpot.x + ix*8, 1.15, hideSpot.z + iz*8];
+      if (hideSpot.kind==='bed'){
+        eye=[hideSpot.x + ix*0.62, 0.22, hideSpot.z + iz*0.62];
+        target=[hideSpot.x + ix*8, 0.35, hideSpot.z + iz*8];
+      } else {
+        eye=[hideSpot.x + ix*0.55, 1.62, hideSpot.z + iz*0.55];
+        target=[hideSpot.x + ix*8, 1.15, hideSpot.z + iz*8];
+      }
     } else {
       // a slow handheld drift, so the frame is never perfectly still
       var swayX=Math.sin(now/2300)*0.045 + Math.sin(now/770)*0.016;
@@ -3482,88 +3537,7 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
       var near=1-dd/9, pulse=0.55+0.45*Math.sin(now/380+i);
       var g=(0.10+near*0.55)*pulse + (dd<2.2?0.35:0);
       var fx=h.x-h.nx*0.33, fz=h.z-h.nz*0.33;
-      drawCube(trsModel(fx,1.02,fz,h.yaw, 0.025,1.80,0.025), [0.95*g,0.80*g,0.55*g], true);
-      var kx=h.x-h.nx*0.34+(-h.nz)*0.14, kz=h.z-h.nz*0.34+(h.nx)*0.14;
-      drawCube(trsModel(kx,1.05,kz,h.yaw, 0.05,0.05,0.04), [0.9*(0.4+g),0.72*(0.4+g),0.30*(0.4+g)], true);
-    }
-  }
-  function drawShadow(x,z,r){ drawCube(trsModel(x,0.02,z,0,r,0.01,r*0.85), C_SHADOW, true); }
-
-  function drawDoorPanel(now){
-    var ed=doorTransform();
-    var unlocked = keysHeld>=keyItems.length;
-    var base = unlocked?C_DOOR_OPEN:C_DOOR_LOCKED;
-    var pulse = unlocked ? (0.95+Math.sin(now/240)*0.35) : (0.42+Math.sin(now/700)*0.10);
-    drawCube(trsModel(ed.x,0.92,ed.z, ed.yaw, 0.16,1.84,1.5),
-             [base[0]*pulse, base[1]*pulse, base[2]*pulse], true);
-  }
-
-  function drawFires(now){
-    for (var i=0;i<fires.length;i++){
-      var f=fires[i];
-      if (Math.abs(f.x-player.x)>19 || Math.abs(f.z-player.z)>19) continue;
-      var fl=0.8+Math.sin(now/70+i)*0.16+Math.random()*0.12;
-      if (f.kind==='fire'){
-        // embers plus a couple of licking tongues of flame
-        drawCube(trsModel(f.x,0.16,f.z,0,0.62,0.10,0.24), [0.75*fl,0.20*fl,0.05*fl], true);
-        for (var t=0;t<3;t++){
-          var ph=now/150+t*2.1;
-          var h=0.28+Math.sin(ph)*0.12;
-          var ox=(t-1)*0.17;
-          drawCube(trsModel(f.x+ox,0.22+h/2,f.z,0, 0.11,h,0.10),
-                   [1.0*fl, (0.52+Math.sin(ph)*0.12)*fl, 0.13*fl], true);
-        }
-      } else {
-        var h2=0.10+Math.sin(now/90+i)*0.03;
-        drawCube(trsModel(f.x,0.95+h2/2,f.z,0, 0.05,h2,0.05), [1.0*fl,0.72*fl,0.30*fl], true);
-      }
-    }
-  }
-
-  function drawKeys(now){
-    for (var i=0;i<keyItems.length;i++){
-      var k=keyItems[i];
-      if (k.taken) continue;
-      var bob=Math.sin(now/420 + i)*0.09;
-      var spin=now/600 + i;
-      drawCube(trsModel(k.x, 0.72+bob, k.z, spin, 0.10,0.20,0.10), C_KEY, true);
-      drawCube(trsModel(k.x, 0.62+bob, k.z, spin, 0.22,0.05,0.07), C_KEY, true);
-      drawCube(trsModel(k.x, 0.02, k.z, 0, 0.55,0.008,0.55), [0.32,0.24,0.09], true);
-    }
-  }
-
-  function drawGirl(now){
-    if (!girl.active || girl.fade<=0.02) return;
-    var f=girl.fade;
-    var sway=Math.sin(now/900)*0.03;
-    // she always faces you
-    var yaw=Math.atan2(-(player.x-girl.x), -(player.z-girl.z));
-    function at(lx,lz){ var p=rotY(lx,lz,yaw); return [girl.x+p[0], girl.z+p[1]]; }
-    var DRESS=[0.60*f,0.62*f,0.66*f], SKIN=[0.72*f,0.68*f,0.66*f], HAIR=[0.16*f,0.14*f,0.15*f];
-    var b=at(0,0);
-    // dress, wider at the hem
-    drawCube(trsModel(b[0],0.30+sway,b[1],yaw,0.42,0.30,0.34), DRESS, true);
-    drawCube(trsModel(b[0],0.66+sway,b[1],yaw,0.30,0.44,0.24), DRESS, true);
-    // arms hanging straight down
-    var la=at(-0.20,0), ra=at(0.20,0);
-    drawCube(trsModel(la[0],0.70+sway,la[1],yaw,0.09,0.36,0.10), SKIN, true);
-    drawCube(trsModel(ra[0],0.70+sway,ra[1],yaw,0.09,0.36,0.10), SKIN, true);
-    // head, hair over the face
-    drawCube(trsModel(b[0],1.02+sway,b[1],yaw,0.24,0.24,0.23), SKIN, true);
-    drawCube(trsModel(b[0],1.12+sway,b[1],yaw,0.27,0.16,0.26), HAIR, true);
-    var hf=at(0,-0.10);
-    drawCube(trsModel(hf[0],1.03+sway,hf[1],yaw,0.26,0.20,0.06), HAIR, true);
-  }
-
-  // wardrobes announce themselves: a seam of light down the door and a knob
-  // that catches the lantern, brighter as you get near
-  function drawHideMarkers(now){
-    for (var i=0;i<hideSpots.length;i++){
-      var h=hideSpots[i], dd=dist(player.x,player.z,h.x,h.z);
-      if (dd>9) continue;
-      var near=1-dd/9, pulse=0.55+0.45*Math.sin(now/380+i);
-      var g=(0.10+near*0.55)*pulse + (dd<2.2?0.35:0);
-      var fx=h.x-h.nx*0.33, fz=h.z-h.nz*0.33;
+      if (h.kind==='bed'){ var bx2=h.x-h.nx*0.66, bz2=h.z-h.nz*0.66; drawCube(trsModel(bx2,0.05,bz2,h.yaw, 1.9,0.02,0.02), [0.95*g,0.80*g,0.55*g], true); continue; }
       drawCube(trsModel(fx,1.02,fz,h.yaw, 0.025,1.80,0.025), [0.95*g,0.80*g,0.55*g], true);
       var kx=h.x-h.nx*0.34+(-h.nz)*0.14, kz=h.z-h.nz*0.34+(h.nx)*0.14;
       drawCube(trsModel(kx,1.05,kz,h.yaw, 0.05,0.05,0.04), [0.9*(0.4+g),0.72*(0.4+g),0.30*(0.4+g)], true);
@@ -3618,7 +3592,8 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
     pl=pl||player; tint=tint||null;
     var yaw=pl.yaw, po=pl.pose;
     var swing=po.swing, bob=po.bob, lean=po.lean;
-    var bx=player.x, bz=player.z;
+    var bx=pl.x, bz=pl.z;
+    var SH=tint?tint:C_SHIRT, SHD=tint?[tint[0]*0.68,tint[1]*0.68,tint[2]*0.68]:C_SHIRT_D;
     function at(lx,lz){ var p=rotY(lx,lz,yaw); return [bx+p[0], bz+p[1]]; }
 
     var hipY=0.80+bob;
@@ -3632,23 +3607,23 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
     var torso=at(0,0);
     var tm=m4Multiply(m4Translate(torso[0],1.13+bob,torso[1]), m4RotateY(yaw));
     tm=m4Multiply(tm, m4RotateX(lean));
-    drawCube(m4Multiply(tm, m4Scale(0.50,0.60,0.29)), C_SHIRT,false);
+    drawCube(m4Multiply(tm, m4Scale(0.50,0.60,0.29)), SH,false);
     var belt=at(0,0);
-    drawCube(trsModel(belt[0],0.84+bob,belt[1],yaw,0.52,0.10,0.31), C_SHIRT_D,false);
+    drawCube(trsModel(belt[0],0.84+bob,belt[1],yaw,0.52,0.10,0.31), SHD,false);
 
     var shY=po.shY;
     var sl=at(-0.335,0.02), lArm=-swing*0.95;
-    drawCube(limbModel(sl[0],shY,sl[1],yaw,lArm, 0.155,0.50,0.17), C_SHIRT,false);
+    drawCube(limbModel(sl[0],shY,sl[1],yaw,lArm, 0.155,0.50,0.17), SH,false);
     var hL=at(-0.335,-0.50*Math.sin(lArm));
     drawCube(trsModel(hL[0], shY-0.50*Math.cos(lArm), hL[1], yaw, 0.15,0.15,0.15), C_SKIN,false);
 
     var sr=at(0.335,0.02);
-    drawCube(limbModel(sr[0],shY,sr[1],yaw,po.rArmPitch, 0.155,0.50,0.17), C_SHIRT,false);
+    drawCube(limbModel(sr[0],shY,sr[1],yaw,po.rArmPitch, 0.155,0.50,0.17), SH,false);
     var hR=at(0.335,po.handLZ);
     drawCube(trsModel(hR[0],po.handY,hR[1],yaw,0.15,0.15,0.15), C_SKIN,false);
 
     var lw=at(0.335, po.handLZ-0.03);
-    var lf=0.86+Math.sin(player.animT*3.1)*0.05+Math.random()*0.06;
+    var lf=0.86+Math.sin(pl.animT*3.1)*0.05+Math.random()*0.06;
     drawCube(trsModel(lw[0],po.handY-0.06,lw[1],yaw,0.035,0.12,0.035), C_HAIR,false);
     drawCube(trsModel(lw[0],po.lanternY,lw[1],yaw,0.17,0.20,0.17), C_LANTERN_FRAME,false);
     drawCube(trsModel(lw[0],po.lanternY,lw[1],yaw,0.185,0.125,0.185),
@@ -3995,7 +3970,7 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
     if (!window.supabase){ lbStatus.textContent='could not load the network library'; return; }
     NET.name=(lbName.value||'someone').trim().slice(0,12);
     try{ localStorage.setItem('eth-name',NET.name); }catch(e){}
-    NET.me=uid(); NET.code=code; NET.role=asHost?'host':'peer'; NET.peers={}; NET.on=true;
+    NET.me=uid(); NET.code=code; NET.role=asHost?'host':'peer'; NET.peers={}; NET.on=true; NET.hostSeen=false;
     NET.sb=NET.sb||window.supabase.createClient(SB_URL,SB_KEY);
     lbJoin.classList.add('hidden'); lbRoom.classList.remove('hidden'); startBtn.style.display='none';
     lbRoomcode.textContent=code; lbStatus.textContent='connecting…';
@@ -4008,13 +3983,15 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
         if (!NET.peers[k]) NET.peers[k]={ id:k, name:m.name, host:!!m.host, x:0,z:0,tx:0,tz:0,yaw:0,tyaw:0,moving:false,sprinting:false,hidden:false,dead:false,out:false,animT:0,pose:null,role:'survivor',seenAt:0 };
         NET.peers[k].name=m.name; NET.peers[k].host=!!m.host;
       }
-      for (var k2 in NET.peers) if (!seen[k2]) delete NET.peers[k2];
+      for (var k3b in NET.peers) if (!NET.peers[k3b].announced){ NET.peers[k3b].announced=true; lobbyPing(NET.peers[k3b].name+' joined'); if (VOICE.on) voiceConnect(k3b); if (isHost() && NET.started && running) setTimeout(function(){ netSend('start',{ seed:NET.seed, mode:NET.mode, pun:NET.punId, diff:diffName, late:true }); }, 400); }
+      for (var k2 in NET.peers) if (!seen[k2]){ lobbyPing(NET.peers[k2].name+' left'); voiceDrop(k2); delete NET.peers[k2]; }
       // if the host vanished, the earliest remaining player takes over
       if (!isHost()){ var hostAlive=false; for (var k3 in NET.peers) if (NET.peers[k3].host) hostAlive=true;
-        if (!hostAlive && !NET.started){ var ids=Object.keys(NET.peers).concat([NET.me]).sort(); if (ids[0]===NET.me){ NET.role='host'; lbHostbox.classList.remove('hidden'); ch.track({name:NET.name,host:true}); } } }
+        if (hostAlive) NET.hostSeen=true;
+        if (NET.hostSeen && !hostAlive && !NET.started){ var ids=Object.keys(NET.peers).concat([NET.me]).sort(); if (ids[0]===NET.me){ NET.role='host'; lbHostbox.classList.remove('hidden'); ch.track({name:NET.name,host:true}); } } }
       renderRoster();
     });
-    ch.on('broadcast',{event:'start'},function(m){ if (!isHost()) netStart(m.payload); });
+    ch.on('broadcast',{event:'start'},function(m){ if (isHost()) return; if (m.payload.late && NET.started) return; netStart(m.payload); });
     ch.on('broadcast',{event:'state'},function(m){ var q=NET.peers[m.payload.from]; if (!q) return; var pl=m.payload;
       q.tx=pl.x; q.tz=pl.z; q.tyaw=pl.yaw; q.moving=pl.m; q.sprinting=pl.s; q.hidden=pl.h; q.role=pl.r;
       if (!q.seenAt || Math.abs(q.x-q.tx)>6 || Math.abs(q.z-q.tz)>6){ q.x=q.tx; q.z=q.tz; q.yaw=q.tyaw; }
@@ -4023,6 +4000,7 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
     ch.on('broadcast',{event:'pun'},function(m){ if (!NET.isPun && !isHost()) NET.remoteCreature=m.payload; else if (!NET.isPun && isHost() && NET.mode==='vs') NET.remoteCreature=m.payload; });
     ch.on('broadcast',{event:'key'},function(m){ var k=keyItems[m.payload.i]; if (k && !k.taken){ k.taken=true; keysHeld++; keyChime(); updateKeysHud(); var who=NET.peers[m.payload.from]; showToast((who?who.name:'someone')+' found key '+keysHeld+' of '+keyItems.length);
       if (keysHeld>=keyItems.length){ endgame=true; graceLeft=0; awakenStinger(); setTimeout(function(){ voice(pick('gomad1','gomad2'),{vol:1.0,cool:0}); },350); showToast('He knows. Run for the door.', true); } } });
+    ch.on('broadcast',{event:'rtc'},function(m){ voiceSignal(m.payload); });
     ch.on('broadcast',{event:'voice'},function(m){ voice(m.payload.k,{vol:1.0,minGap:0,cool:0,local:true}); });
     ch.on('broadcast',{event:'dead'},function(m){ var q=NET.peers[m.payload.from]; if (q){ q.dead=true; showToast('He got '+q.name, true); } });
     ch.on('broadcast',{event:'out'},function(m){ var q=NET.peers[m.payload.from]; if (q){ q.out=true; showToast(q.name+' made it out'); } });
@@ -4034,8 +4012,16 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
   }
   function leaveRoom(){
     if (NET.chan){ try{ NET.chan.unsubscribe(); }catch(e){} }
+    voiceOff();
     NET.on=false; NET.role='solo'; NET.chan=null; NET.peers={}; NET.isPun=false; NET.started=false; NET.remoteCreature=null;
     lbJoin.classList.remove('hidden'); lbRoom.classList.add('hidden'); netList.textContent=''; startBtn.style.display='';
+  }
+  var lbNote=null;
+  function lobbyPing(text){
+    if (!lbNote){ lbNote=document.createElement('div'); lbNote.className='lb-note'; lbRoster.parentNode.insertBefore(lbNote, lbRoster.nextSibling); }
+    lbNote.textContent=text; lbNote.classList.add('show'); setTimeout(function(){ lbNote.classList.remove('show'); }, 3500);
+    if (document.body.classList.contains('playing')) showToast(text);
+    try{ initAudio(); if (A.ctx){ if (A.ctx.state==='suspended') A.ctx.resume(); knockSound(0); } }catch(e){}
   }
   function renderRoster(){
     var html='<li><span>'+NET.name+' (you)</span><span class="tag">'+(isHost()?'host':'')+'</span></li>';
@@ -4064,6 +4050,7 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
   }
   function netOnReset(){
     if (!NET.on) return;
+    if (VOICE.stream) VOICE.stream.getAudioTracks().forEach(function(t){ t.enabled=!NET.isPun; });
     NET.dead=false; NET.out=false; NET.roundOver=false;
     if (NET.isPun){
       // you start where the creature would have, and it is you
@@ -4086,6 +4073,7 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
     if (now-NET.lastSend<66) return;
     NET.lastSend=now;
     var pl={ x:+player.x.toFixed(2), z:+player.z.toFixed(2), yaw:+player.yaw.toFixed(2), m:player.moving, s:player.sprinting, h:hidden, r:myRole() };
+    if (VOICE.stream) VOICE.stream.getAudioTracks().forEach(function(t){ t.enabled=!NET.isPun; });
     if (NET.isPun){ pl.a=+creature.animT.toFixed(2); pl.hu=huntMode; }
     netSend('state', pl);
     if (isHost() && !NET.isPun && NET.mode==='coop') netSend('pun', { x:+creature.x.toFixed(2), z:+creature.z.toFixed(2), yaw:+creature.yaw.toFixed(2), animT:+creature.animT.toFixed(2), hunt:huntMode });
@@ -4151,6 +4139,102 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
       if (pausedByHide){ pausedByHide=false; running=true; lastT=null; requestAnimationFrame(loop); }
     }
   });
+  // ===================== PROXIMITY VOICE =====================
+  // Microphones go peer to peer over WebRTC; the room channel only carries the
+  // handshake. Each friend's voice is placed in the house: you hear them by how
+  // close they are, and from which side.
+  var VOICE={ on:false, stream:null, pcs:{}, nodes:{} };
+  var RTC_CFG={ iceServers:[{ urls:['stun:stun.l.google.com:19302','stun:stun1.l.google.com:19302'] }] };
+  var lbMic=$('lb-mic'), lbMicNote=$('lb-mic-note');
+  lbMic.addEventListener('click', function(){
+    if (VOICE.on){ voiceOff(); return; }
+    if (!navigator.mediaDevices || !window.RTCPeerConnection){ lbMicNote.textContent='this browser cannot do voice'; return; }
+    navigator.mediaDevices.getUserMedia({ audio:{ echoCancellation:true, noiseSuppression:true, autoGainControl:true }, video:false }).then(function(st){
+      VOICE.stream=st; VOICE.on=true; lbMic.textContent='voice: on'; lbMic.classList.add('on'); lbMicNote.textContent='mic is live — they hear you when they are near';
+      for (var k in VOICE.pcs) voiceDrop(k);
+      for (var k2 in NET.peers) voiceConnect(k2);
+    }).catch(function(){ lbMicNote.textContent='microphone permission was refused'; });
+  });
+  function voiceOff(){
+    VOICE.on=false; lbMic.textContent='voice: off'; lbMic.classList.remove('on'); lbMicNote.textContent='survivors hear each other when close — Pun is not on the call';
+    if (VOICE.stream){ VOICE.stream.getTracks().forEach(function(t){ t.stop(); }); VOICE.stream=null; }
+    for (var k in VOICE.pcs) voiceDrop(k);
+  }
+  function voiceDrop(k){
+    if (VOICE.pcs[k]){ try{ VOICE.pcs[k].close(); }catch(e){} delete VOICE.pcs[k]; }
+    if (VOICE.nodes[k]){ try{ VOICE.nodes[k].src.disconnect(); VOICE.nodes[k].el.srcObject=null; }catch(e){} delete VOICE.nodes[k]; }
+  }
+  function voicePC(k){
+    if (VOICE.pcs[k]) return VOICE.pcs[k];
+    var pc=new RTCPeerConnection(RTC_CFG); VOICE.pcs[k]=pc;
+    if (VOICE.stream) VOICE.stream.getTracks().forEach(function(t){ pc.addTrack(t, VOICE.stream); });
+    else { try{ pc.addTransceiver('audio',{direction:'recvonly'}); }catch(e){} }
+    pc.onicecandidate=function(e){ if (e.candidate) netSend('rtc',{ to:k, kind:'ice', c:JSON.parse(JSON.stringify(e.candidate)) }); };
+    pc.ontrack=function(e){ voiceAttach(k, e.streams[0]); };
+    pc.onconnectionstatechange=function(){ if (pc.connectionState==='failed' || pc.connectionState==='closed') voiceDrop(k); };
+    return pc;
+  }
+  function voiceConnect(k){
+    // the lower id makes the offer, so both sides never offer at once; if the
+    // other side has the lower id, ask them to
+    if (!(NET.me<k)){ netSend('rtc',{ to:k, kind:'call' }); return; }
+    voiceDrop(k);
+    var pc=voicePC(k);
+    pc.createOffer().then(function(o){ return pc.setLocalDescription(o); }).then(function(){ netSend('rtc',{ to:k, kind:'offer', sdp:{type:pc.localDescription.type, sdp:pc.localDescription.sdp} }); }).catch(function(){});
+  }
+  function voiceSignal(m){
+    if (m.to!==NET.me) return;
+    var k=m.from;
+    if (m.kind==='call'){ if (NET.me<k) voiceConnect(k); }
+    else if (m.kind==='offer'){
+      voiceDrop(k);
+      var pc=voicePC(k);
+      pc.setRemoteDescription(new RTCSessionDescription(m.sdp)).then(function(){ return pc.createAnswer(); }).then(function(a){ return pc.setLocalDescription(a); })
+        .then(function(){ netSend('rtc',{ to:k, kind:'answer', sdp:{type:pc.localDescription.type, sdp:pc.localDescription.sdp} }); }).catch(function(){});
+    } else if (m.kind==='answer'){
+      var pc2=VOICE.pcs[k]; if (pc2) pc2.setRemoteDescription(new RTCSessionDescription(m.sdp)).catch(function(){});
+    } else if (m.kind==='ice'){
+      var pc3=VOICE.pcs[k]; if (pc3) pc3.addIceCandidate(new RTCIceCandidate(m.c)).catch(function(){});
+    }
+  }
+  function voiceAttach(k, stream){
+    initAudio(); if (!A.ctx) return;
+    if (A.ctx.state==='suspended') A.ctx.resume();
+    // Chrome only plays a remote stream through Web Audio if an element also holds it
+    var el=new Audio(); el.srcObject=stream; el.muted=true; el.play().catch(function(){});
+    var src=A.ctx.createMediaStreamSource(stream);
+    var f=A.ctx.createBiquadFilter(); f.type='lowpass'; f.frequency.value=8000;
+    var g=A.ctx.createGain(); g.gain.value=0;
+    var out=g, pan=null;
+    if (A.ctx.createStereoPanner){ pan=A.ctx.createStereoPanner(); g.connect(pan); out=pan; }
+    src.connect(f); f.connect(g); out.connect(A.ctx.destination);
+    VOICE.nodes[k]={ el:el, src:src, f:f, g:g, pan:pan };
+  }
+  function voiceUpdate(){
+    if (!A.ctx) return;
+    for (var k in VOICE.nodes){
+      var n=VOICE.nodes[k], q=NET.peers[k];
+      var vol=0, pan=0, cut=8000;
+      if (q && document.body.classList.contains('playing') && player){
+        var dd=dist(player.x,player.z,q.x,q.z);
+        vol = Math.max(0, Math.min(1, 1-(dd-2.5)/11));
+        // through a wardrobe door, or from under a bed, a voice is a whisper
+        if (q.hidden) { vol*=0.45; cut=2200; }
+        if (hidden)   { vol*=0.6;  cut=Math.min(cut,3000); }
+        // the dead hear everyone, faintly, from everywhere; the living can't hear the dead
+        if (NET.dead) vol=Math.max(vol, 0.5);
+        if (q.dead && !NET.dead) vol=0;
+        // the monster is not on the call: Pun hears nobody, and nobody hears Pun
+        if (NET.isPun || q.role==='pun') vol=0;
+        pan=Math.max(-1,Math.min(1,(q.x-player.x)/6));
+      } else vol=1;   // on the poster, the lobby is a normal call
+      n.g.gain.setTargetAtTime(vol, A.ctx.currentTime, 0.08);
+      n.f.frequency.setTargetAtTime(cut, A.ctx.currentTime, 0.1);
+      if (n.pan) n.pan.pan.setTargetAtTime(pan, A.ctx.currentTime, 0.1);
+    }
+  }
+  setInterval(function(){ try{ voiceUpdate(); }catch(e){} }, 100);
+
   function startRun(){
     document.body.classList.add('playing');
     sizeCanvas();
@@ -4162,6 +4246,7 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
   // ---- back to the menu, so the difficulty can be changed
   function toMenu(){
     running=false; NET.started=false;
+    if (VOICE.stream) VOICE.stream.getAudioTracks().forEach(function(t){ t.enabled=true; });
     phase='over';
     try{ if (window.speechSynthesis) window.speechSynthesis.cancel(); }catch(e){}
     subtitleEl.classList.remove('show'); subTimer=0;

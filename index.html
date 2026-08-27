@@ -1,5 +1,5 @@
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <title>Escape the House</title>
 <meta name="description" content="A browser horror game. Search a bloodied procedural house for keys while Pun hunts you, hide in wardrobes, and run for the door. Alone or with friends.">
 <meta name="theme-color" content="#0b0a0d">
@@ -53,6 +53,7 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
   }
   *{box-sizing:border-box;}
 
+  html, body{ touch-action:manipulation; overscroll-behavior:none; }
   body{
     margin:0;
     background:
@@ -76,8 +77,8 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
 
   .stage{
     position:relative;
-    width:min(94vw, 900px);
-    padding:26px;
+    width:100%;
+    padding:0;
     display:flex; flex-direction:column; align-items:center; gap:16px;
   }
 
@@ -173,7 +174,13 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
   .hidden{ display:none !important; }
 
   /* while playing, the game takes the whole window */
-  body.playing{ background:#000; }
+  body.playing{ background:#000; position:fixed; inset:0; overflow:hidden; overscroll-behavior:none; touch-action:none; }
+  body.playing .frame{ position:fixed; inset:0; width:100vw; height:100dvh; touch-action:none; }
+  body.playing .hud{ padding-top:max(10px, env(safe-area-inset-top)); padding-left:max(14px, env(safe-area-inset-left)); padding-right:max(14px, env(safe-area-inset-right)); }
+  body.playing .menu-btn{ top:max(10px, env(safe-area-inset-top)); }
+  body.playing .status{ top:max(12px, env(safe-area-inset-top)); }
+  body.playing .act-btn{ bottom:max(34px, calc(env(safe-area-inset-bottom) + 18px)); right:max(26px, env(safe-area-inset-right)); }
+  body.playing .prompt{ bottom:max(18px, calc(env(safe-area-inset-bottom) + 10px)); }
   body.playing .stage{
     width:100vw; max-width:none; height:100dvh; padding:0; gap:0;
   }
@@ -314,7 +321,7 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
     width:132px; height:132px; border-radius:50%;
     background:radial-gradient(circle at 50% 50%, rgba(40,34,48,.5), rgba(18,15,22,.62));
     border:1px solid rgba(217,208,198,.22);
-    touch-action:none; user-select:none;
+    touch-action:none; user-select:none; pointer-events:none;
     display:none;
   }
   .stick::after{
@@ -338,7 +345,9 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
     border:2px solid rgba(224,179,84,0); transition:border-color .12s ease;
   }
   .stick.running .ring{ border-color:rgba(224,179,84,.55); }
-  .touch .stick{ display:block; }
+  .touch .stick{ display:none; }
+  .touch .stick.live{ display:block; }
+  .touch .stick-hint{ position:absolute; left:0; bottom:0; width:50%; height:55%; pointer-events:none; }
 
   .act-btn{
     position:absolute; bottom:34px; right:26px;
@@ -466,7 +475,7 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
     border-radius:4px;
   }
   .poster{
-    position:relative; width:min(560px, 96vw); padding:34px 34px 30px;
+    position:relative; width:min(560px, 96vw); padding:34px 34px 30px; transform-origin:50% 0;
     color:#1b1512;
     background:
       radial-gradient(circle at 18% 12%, rgba(255,255,255,.35), transparent 30%),
@@ -581,6 +590,20 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
   .hud .net-list .dead{ text-decoration:line-through; opacity:.5; }
   .hud .net-list .out{ color:var(--win); }
   .wall-note{ margin:0; font-family:'Space Mono', monospace; font-size:.58rem; letter-spacing:.18em; text-transform:uppercase; color:rgba(217,208,198,.35); }
+  @media (min-width:760px){
+    .poster{ width:min(860px, 96vw); padding:22px 30px 20px; }
+    .poster .p-cols{ display:grid; grid-template-columns:1fr 1fr; gap:0 34px; align-items:start; }
+    .poster .p-head{ grid-column:1 / -1; }
+    .poster .p-body{ margin-top:0; }
+    .poster .p-rules{ margin-top:0; padding-top:0; border-top:none; justify-content:flex-start; }
+    .poster .p-tabs-label{ margin-top:8px; }
+    .poster .p-tabs{ flex-wrap:nowrap; }
+    .poster .p-tabs button{ flex:1 1 0; min-width:0; height:96px; }
+    .poster .lobby{ margin-top:12px; padding-top:10px; }
+    .poster .stamp{ margin-top:12px; }
+  }
+  .wall{ justify-content:center; min-height:100dvh; box-sizing:border-box; padding:12px 10px; border-radius:0; }
+  .wall-note{ margin-top:6px; }
   @media (max-width:640px){
     .poster{ padding:26px 18px 22px; transform:rotate(-.8deg); }
     .p-body{ grid-template-columns:110px 1fr; gap:14px; }
@@ -602,6 +625,8 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
           <span class="p-kicker">have you seen this man</span>
           <h1 class="p-title">MISSING</h1>
         </div>
+        <div class="p-cols">
+        <div class="p-left">
         <div class="p-body">
           <figure class="p-photo">
             <span class="tape tl"></span><span class="tape br"></span>
@@ -615,6 +640,8 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
             <div class="warn"><dt>Warning</dt><dd>If found, DO NOT APPROACH. He is not himself.</dd></div>
           </dl>
         </div>
+        </div>
+        <div class="p-right">
         <div class="p-rules">
           <span><b>W A S D</b> move</span><span><b>Shift</b> run</span><span><b>E</b> hide in a wardrobe</span><span><b>keys</b> every one, then the door</span>
         </div>
@@ -644,9 +671,11 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
               <button id="lb-start" class="cta stamp small"><span>GO IN</span></button>
             </div>
             <div class="lb-wait" id="lb-wait">waiting for the host to open the door&hellip;</div>
-            <div class="lb-voice"><button id="lb-mic" class="lb-btn">voice: off</button><span id="lb-mic-note">survivors hear each other when close &mdash; Pun is not on the call</span></div>
+            <div class="lb-voice"><button id="lb-mic" class="lb-btn">voice: off</button><span id="lb-mic-note">co-op: everyone on the call &middot; playing Pun: survivors whisper when close</span></div>
             <button id="lb-leave" class="lb-btn ghost">leave</button>
           </div>
+        </div>
+        </div>
         </div>
       </div>
       <p class="wall-note">a house of rooms &middot; procedural &middot; real-time 3d &middot; he is already inside</p>
@@ -700,7 +729,7 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
       </div>
     </div>
     <p class="end-sub controls-note" style="opacity:.6"><kbd>W A S D</kbd> move &middot; <kbd>Shift</kbd> run &middot; <kbd>E</kbd> hide</p>
-    <p class="rotate-hint">Turn your phone sideways for a bigger view</p>
+    <p class="rotate-hint">Turn your phone sideways &middot; touch the left side to walk, the button to hide</p>
   </div>
 
 </div>
@@ -1220,14 +1249,14 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
     A.noise=makeNoise(3);
 
     // --- sub: felt, not heard. no harmonics, so nothing to buzz.
-    A.subG=ctx.createGain(); A.subG.gain.value=0.16; A.subG.connect(A.master);
+    A.subG=ctx.createGain(); A.subG.gain.value=0.07; A.subG.connect(A.master);
     var sub=ctx.createOscillator(); sub.type='sine'; sub.frequency.value=30;
     sub.connect(A.subG); sub.start();
 
     // --- pad: two triangles a fifth apart (D2 + A2). consonant while you're safe.
     A.padFilt=ctx.createBiquadFilter();
-    A.padFilt.type='lowpass'; A.padFilt.frequency.value=420; A.padFilt.Q.value=1.2;
-    A.padG=ctx.createGain(); A.padG.gain.value=0.13;
+    A.padFilt.type='lowpass'; A.padFilt.frequency.value=300; A.padFilt.Q.value=0.7;
+    A.padG=ctx.createGain(); A.padG.gain.value=0.06;
     A.padFilt.connect(A.padG); A.padG.connect(A.master); A.padG.connect(A.conv);
     [73.42, 110.0].forEach(function(f,i){
       var o=ctx.createOscillator(); o.type='triangle'; o.frequency.value=f;
@@ -1318,12 +1347,12 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
     var i = (Math.random()*(SCALE.length-3))|0;
     var step = Math.random()<0.5 ? 1 : 2;
     var down = Math.random()<0.55;
-    var gap = 340 + Math.random()*300;
+    var gap = 520 + Math.random()*500;
     for (var k=0;k<n;k++){
       (function(idx, delay, last){
         setTimeout(function(){
           if (!A.ctx) return;
-          pianoNote(SCALE[Math.max(0,Math.min(SCALE.length-1, idx))], last?0.075:0.10);
+          pianoNote(SCALE[Math.max(0,Math.min(SCALE.length-1, idx))], last?0.05:0.065);
         }, delay);
       })(down ? i-k*step : i+k*step, k*gap, k===n-1);
     }
@@ -1674,12 +1703,13 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
 
   function updateAudio(dread, hunting, dist, hidden, nowMs, prox, pan){
     if (!A.ctx) return;
-    A.master.gain.value = 0.52 + dread*0.34;
-    A.padFilt.frequency.value = 420 + dread*900;
-    A.padG.gain.value = 0.13 + dread*0.07;
-    A.subG.gain.value = 0.16 + dread*0.20;
-    A.dissG.gain.value = dread*dread*0.10;
-    A.shriekG.gain.value = Math.max(0, dread-0.45)*0.30;
+    A.master.gain.value = 0.50 + dread*0.30;
+    A.padFilt.frequency.value = 300 + dread*700;
+    A.padG.gain.value = 0.06 + dread*0.06;
+    A.subG.gain.value = 0.07 + dread*0.16;
+    // the wrong note and the shriek only once it is really on you
+    A.dissG.gain.value = Math.max(0, dread-0.35)*Math.max(0, dread-0.35)*0.12;
+    A.shriekG.gain.value = Math.max(0, dread-0.62)*0.22;
 
     if (hunting && dist < 6.5 && !hidden){
       if (!A.nearArmed){ A.nearArmed=true; proximityScrape(); }
@@ -1692,11 +1722,11 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
     A.breathG.gain.value = hunting ? Math.max(0, 1-dist/3.2)*0.13 : 0;
 
     // heartbeat only once something is actually wrong — silence is the default
-    if (dread > 0.12){
-      A.hbInt = 1300 - dread*820;
+    if (dread > 0.2){
+      A.hbInt = 1300 - dread*780;
       if (nowMs - A.hbLast > A.hbInt){
         A.hbLast = nowMs;
-        var t=A.ctx.currentTime, v=0.16+dread*0.5;
+        var t=A.ctx.currentTime, v=0.10+dread*0.42;
         heartThump(t,v); heartThump(t+0.18, v*0.6);
       }
     } else A.hbLast = nowMs - 400;
@@ -1715,11 +1745,11 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
     if (dread < 0.3){
       if (nowMs > A.nextNote){
         pianoPhrase();
-        A.nextNote = nowMs + 3400 + Math.random()*4200;
+        A.nextNote = nowMs + 9000 + Math.random()*14000;
       }
       if (nowMs > A.nextAmbient){
         houseNoise();
-        A.nextAmbient = nowMs + 5000 + Math.random()*8000;
+        A.nextAmbient = nowMs + 8000 + Math.random()*12000;
       }
       if (nowMs > A.nextWind){
         windSwell();
@@ -2794,7 +2824,7 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
   function stickReset(){
     stickId=null; joy.x=0; joy.y=0; joy.mag=0;
     knobEl.style.transform='translate(0px,0px)';
-    stickEl.classList.remove('running');
+    stickEl.classList.remove('running'); stickEl.classList.remove('live');
   }
   function stickFrom(ev){
     var r=stickEl.getBoundingClientRect();
@@ -2802,23 +2832,35 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
     stickR=r.width*0.39;
     stickSet((ev.clientX-cx)/stickR, (ev.clientY-cy)/stickR);
   }
-  stickEl.addEventListener('pointerdown', function(e){
+  // the stick floats: it appears under your thumb wherever you touch the
+  // left-hand side of the view, and vanishes when you let go
+  function stickPlace(ev){
+    var fr=frame.getBoundingClientRect();
+    var w=stickEl.offsetWidth||132;
+    stickEl.style.left=(ev.clientX-fr.left-w/2)+'px'; stickEl.style.top=(ev.clientY-fr.top-w/2)+'px'; stickEl.style.bottom='auto';
+    stickEl.classList.add('live');
+  }
+  frame.addEventListener('pointerdown', function(e){
+    if (!isTouch || e.pointerType==='mouse' || !document.body.classList.contains('playing')) return;
+    if (e.target.closest('button') || e.target.closest('.act-btn')) return;
+    var fr=frame.getBoundingClientRect();
+    if (stickId!==null || e.clientX-fr.left > fr.width*0.55) return;
     e.preventDefault();
-    stickId=e.pointerId;
-    stickEl.setPointerCapture(e.pointerId);
-    stickFrom(e);
-    struggle();
+    stickId=e.pointerId; stickPlace(e); stickFrom(e);
+    try{ frame.setPointerCapture(e.pointerId); }catch(err){}
   });
-  stickEl.addEventListener('pointermove', function(e){
+  frame.addEventListener('pointermove', function(e){
     if (stickId!==e.pointerId) return;
     e.preventDefault(); stickFrom(e);
   });
-  ['pointerup','pointercancel','pointerleave'].forEach(function(evt){
-    stickEl.addEventListener(evt, function(e){
+  ['pointerup','pointercancel'].forEach(function(evt){
+    frame.addEventListener(evt, function(e){
       if (stickId!==e.pointerId) return;
-      e.preventDefault(); stickReset();
+      e.preventDefault(); stickReset(); stickEl.classList.remove('live');
     });
   });
+  // nothing under the game may scroll or bounce
+  ['touchmove','touchstart'].forEach(function(evt){ frame.addEventListener(evt, function(e){ if (document.body.classList.contains('playing') && !e.target.closest('button')) e.preventDefault(); }, {passive:false}); });
 
   $('act-btn').addEventListener('pointerdown', function(e){
     e.preventDefault(); actPressed=true; struggle();
@@ -3921,11 +3963,12 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
     var r=frame.getBoundingClientRect();
     var w=Math.max(320, Math.round(r.width));
     var h=Math.max(240, Math.round(r.height));
-    var dpr=Math.min(window.devicePixelRatio||1, 2);
+    var touch=(('ontouchstart' in window)||navigator.maxTouchPoints>0);
+    var dpr=Math.min(window.devicePixelRatio||1, touch?1.5:2);
     var pxW=Math.round(w*dpr), pxH=Math.round(h*dpr);
     // keep the total pixel count sane; phones get a tighter budget because the
     // post chain is fill-rate bound
-    var maxPx = (('ontouchstart' in window)||navigator.maxTouchPoints>0) ? 1500000 : 2600000;
+    var maxPx = touch ? 1000000 : 2400000;
     if (pxW*pxH > maxPx){
       var k=Math.sqrt(maxPx/(pxW*pxH));
       pxW=Math.round(pxW*k); pxH=Math.round(pxH*k);
@@ -4144,25 +4187,30 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
   // handshake. Each friend's voice is placed in the house: you hear them by how
   // close they are, and from which side.
   var VOICE={ on:false, stream:null, pcs:{}, nodes:{} };
-  var RTC_CFG={ iceServers:[{ urls:['stun:stun.l.google.com:19302','stun:stun1.l.google.com:19302'] }] };
+  // STUN finds a direct path; the relay is the fallback for phone networks that
+  // won't allow one (the free Open Relay tier — swap for your own TURN if it fills up)
+  var RTC_CFG={ iceServers:[
+    { urls:['stun:stun.l.google.com:19302','stun:stun1.l.google.com:19302','stun:stun.relay.metered.ca:80'] },
+    { urls:['turn:global.relay.metered.ca:80','turn:global.relay.metered.ca:80?transport=tcp','turn:global.relay.metered.ca:443','turns:global.relay.metered.ca:443?transport=tcp'], username:'openrelayproject', credential:'openrelayproject' }
+  ] };
   var lbMic=$('lb-mic'), lbMicNote=$('lb-mic-note');
   lbMic.addEventListener('click', function(){
     if (VOICE.on){ voiceOff(); return; }
     if (!navigator.mediaDevices || !window.RTCPeerConnection){ lbMicNote.textContent='this browser cannot do voice'; return; }
     navigator.mediaDevices.getUserMedia({ audio:{ echoCancellation:true, noiseSuppression:true, autoGainControl:true }, video:false }).then(function(st){
-      VOICE.stream=st; VOICE.on=true; lbMic.textContent='voice: on'; lbMic.classList.add('on'); lbMicNote.textContent='mic is live — they hear you when they are near';
+      VOICE.stream=st; VOICE.on=true; lbMic.textContent='voice: on'; lbMic.classList.add('on'); voiceStatus();
       for (var k in VOICE.pcs) voiceDrop(k);
       for (var k2 in NET.peers) voiceConnect(k2);
     }).catch(function(){ lbMicNote.textContent='microphone permission was refused'; });
   });
   function voiceOff(){
-    VOICE.on=false; lbMic.textContent='voice: off'; lbMic.classList.remove('on'); lbMicNote.textContent='survivors hear each other when close — Pun is not on the call';
+    VOICE.on=false; lbMic.textContent='voice: off'; lbMic.classList.remove('on'); lbMicNote.textContent='co-op: everyone on the call · playing Pun: survivors whisper when close';
     if (VOICE.stream){ VOICE.stream.getTracks().forEach(function(t){ t.stop(); }); VOICE.stream=null; }
     for (var k in VOICE.pcs) voiceDrop(k);
   }
   function voiceDrop(k){
     if (VOICE.pcs[k]){ try{ VOICE.pcs[k].close(); }catch(e){} delete VOICE.pcs[k]; }
-    if (VOICE.nodes[k]){ try{ VOICE.nodes[k].src.disconnect(); VOICE.nodes[k].el.srcObject=null; }catch(e){} delete VOICE.nodes[k]; }
+    if (VOICE.nodes[k]){ try{ VOICE.nodes[k].el.srcObject=null; VOICE.nodes[k].el.remove(); }catch(e){} delete VOICE.nodes[k]; }
   }
   function voicePC(k){
     if (VOICE.pcs[k]) return VOICE.pcs[k];
@@ -4171,7 +4219,7 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
     else { try{ pc.addTransceiver('audio',{direction:'recvonly'}); }catch(e){} }
     pc.onicecandidate=function(e){ if (e.candidate) netSend('rtc',{ to:k, kind:'ice', c:JSON.parse(JSON.stringify(e.candidate)) }); };
     pc.ontrack=function(e){ voiceAttach(k, e.streams[0]); };
-    pc.onconnectionstatechange=function(){ if (pc.connectionState==='failed' || pc.connectionState==='closed') voiceDrop(k); };
+    pc.onconnectionstatechange=function(){ voiceStatus(); if (pc.connectionState==='failed' || pc.connectionState==='closed'){ voiceDrop(k); if (VOICE.on) setTimeout(function(){ if (NET.peers[k] && VOICE.on) voiceConnect(k); }, 2500); } };
     return pc;
   }
   function voiceConnect(k){
@@ -4198,24 +4246,28 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
     }
   }
   function voiceAttach(k, stream){
-    initAudio(); if (!A.ctx) return;
-    if (A.ctx.state==='suspended') A.ctx.resume();
-    // Chrome only plays a remote stream through Web Audio if an element also holds it
-    var el=new Audio(); el.srcObject=stream; el.muted=true; el.play().catch(function(){});
-    var src=A.ctx.createMediaStreamSource(stream);
-    var f=A.ctx.createBiquadFilter(); f.type='lowpass'; f.frequency.value=8000;
-    var g=A.ctx.createGain(); g.gain.value=0;
-    var out=g, pan=null;
-    if (A.ctx.createStereoPanner){ pan=A.ctx.createStereoPanner(); g.connect(pan); out=pan; }
-    src.connect(f); f.connect(g); out.connect(A.ctx.destination);
-    VOICE.nodes[k]={ el:el, src:src, f:f, g:g, pan:pan };
+    // plain <audio> playback: it is the only route iPhones reliably play a
+    // remote voice through. Loudness is the element volume; where a phone
+    // ignores that (iOS), the track is switched off instead when out of range.
+    if (VOICE.nodes[k]) { try{ VOICE.nodes[k].el.srcObject=null; }catch(e){} }
+    var el=document.createElement('audio'); el.autoplay=true; el.playsInline=true; el.setAttribute('playsinline',''); el.srcObject=stream; el.volume=1;
+    el.style.display='none'; document.body.appendChild(el);
+    var tryPlay=function(){ el.play().catch(function(){ setTimeout(tryPlay, 800); }); }; tryPlay();
+    VOICE.nodes[k]={ el:el, stream:stream, vol:1 };
+    voiceStatus();
+  }
+  function voiceStatus(){
+    if (!VOICE.on) return;
+    var n=0, c=0; for (var k in VOICE.pcs){ n++; if (VOICE.pcs[k].connectionState==='connected') c++; }
+    var heard=Object.keys(VOICE.nodes).length;
+    lbMicNote.textContent = n ? ('mic on — linked to '+c+' of '+n+(heard<c?' (waiting for their sound)':'')) : 'mic on — waiting for others';
   }
   function voiceUpdate(){
-    if (!A.ctx) return;
     for (var k in VOICE.nodes){
       var n=VOICE.nodes[k], q=NET.peers[k];
       var vol=0, pan=0, cut=8000;
-      if (q && document.body.classList.contains('playing') && player){
+      if (q && document.body.classList.contains('playing') && player && NET.mode==='vs'){
+        // one of you is Pun: the rest whisper to whoever is near
         var dd=dist(player.x,player.z,q.x,q.z);
         vol = Math.max(0, Math.min(1, 1-(dd-2.5)/11));
         // through a wardrobe door, or from under a bed, a voice is a whisper
@@ -4227,14 +4279,35 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
         // the monster is not on the call: Pun hears nobody, and nobody hears Pun
         if (NET.isPun || q.role==='pun') vol=0;
         pan=Math.max(-1,Math.min(1,(q.x-player.x)/6));
-      } else vol=1;   // on the poster, the lobby is a normal call
-      n.g.gain.setTargetAtTime(vol, A.ctx.currentTime, 0.08);
-      n.f.frequency.setTargetAtTime(cut, A.ctx.currentTime, 0.1);
-      if (n.pan) n.pan.pan.setTargetAtTime(pan, A.ctx.currentTime, 0.1);
+      } else vol=1;   // on the poster, and all through a co-op round, it is a normal call
+      if (Math.abs(vol-n.vol)>0.02){ n.vol=vol; try{ n.el.volume=Math.max(0,Math.min(1,vol)); }catch(e){} n.stream.getAudioTracks().forEach(function(t){ t.enabled = vol>0.05; }); }
+      if (n.el.paused) n.el.play().catch(function(){});
     }
   }
   setInterval(function(){ try{ voiceUpdate(); }catch(e){} }, 100);
 
+  // ---- no pinch or double-tap zoom: Safari ignores the viewport flag, so block the gestures too
+  ['gesturestart','gesturechange','gestureend'].forEach(function(ev){ document.addEventListener(ev, function(e){ e.preventDefault(); }, {passive:false}); });
+  var lastTouchEnd=0;
+  document.addEventListener('touchend', function(e){ var now=Date.now(); if (now-lastTouchEnd<300 && e.target.tagName!=='INPUT') e.preventDefault(); lastTouchEnd=now; }, {passive:false});
+  document.addEventListener('touchmove', function(e){ if (e.touches.length>1) e.preventDefault(); }, {passive:false});
+  document.addEventListener('wheel', function(e){ if (e.ctrlKey) e.preventDefault(); }, {passive:false});
+  document.addEventListener('keydown', function(e){ if ((e.ctrlKey||e.metaKey) && (e.key==='+'||e.key==='-'||e.key==='='||e.key==='0')) e.preventDefault(); });
+  // ---- the poster fits the window: scaled down so nothing needs scrolling
+  var posterEl=$('poster');
+  function fitPoster(){
+    if (document.body.classList.contains('playing')) return;
+    posterEl.style.transform='';
+    var rot = window.innerWidth<=640 ? -0.8 : -1.2;
+    var natW=posterEl.offsetWidth, natH=posterEl.offsetHeight;
+    var availW=window.innerWidth-24, availH=window.innerHeight-44;
+    var k=Math.min(1, availW/(natW+30), availH/(natH+30));
+    posterEl.style.transform='rotate('+rot+'deg) scale('+k.toFixed(3)+')';
+    posterEl.style.marginBottom = (-(natH*(1-k))).toFixed(0)+'px';
+  }
+  window.addEventListener('resize', fitPoster);
+  window.addEventListener('load', function(){ fitPoster(); setTimeout(fitPoster, 400); setTimeout(fitPoster, 1500); });
+  new MutationObserver(function(){ requestAnimationFrame(fitPoster); }).observe($('lobby'), { childList:true, subtree:true, attributes:true });
   function startRun(){
     document.body.classList.add('playing');
     sizeCanvas();
@@ -4254,6 +4327,7 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
     document.body.classList.remove('playing');
     gameScreen.classList.add('hidden');
     startScreen.classList.remove('hidden');
+    setTimeout(fitPoster, 50);
     loseOverlay.classList.add('hidden');
     winOverlay.classList.add('hidden');
     promptEl.classList.add('hidden');

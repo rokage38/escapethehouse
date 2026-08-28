@@ -579,6 +579,9 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
   .lb-mode label{ cursor:pointer; }
   .lb-mode select{ font-family:'Special Elite', monospace; background:rgba(255,255,255,.35); border:none; border-bottom:2px solid #1b1512; color:#1b1512; }
   .stamp.small{ font-size:1.4rem; margin-top:12px; padding:6px 18px; }
+  .stamp:disabled{ opacity:.35; cursor:not-allowed; transform:rotate(-6deg) !important; }
+  #lb-ready{ display:block; margin:10px auto 0; }
+  #lb-ready.on{ background:#2f6b3a; }
   .lb-voice{ display:flex; gap:10px; align-items:center; justify-content:center; margin-top:12px; font-size:.7rem; color:#5a4636; }
   .lb-btn.on{ background:#7a1420; }
   .lb-note{ text-align:center; color:#7a1420; font-weight:700; margin-top:6px; opacity:0; transition:opacity .3s; }
@@ -586,6 +589,22 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
   .lb-wait{ text-align:center; color:#5a4636; font-style:italic; margin-top:10px; }
   .lb-host:not(.hidden) ~ .lb-wait{ display:none; }
   #lobby .hidden{ display:none !important; }
+  .gear-btn{ position:absolute; top:12px; left:50%; margin-left:-110px; font-size:.85rem; line-height:1; padding:4px 9px; background:rgba(20,16,22,.6); color:var(--bone-dim); border:1px solid rgba(217,208,198,.25); border-radius:3px; cursor:pointer; z-index:6; }
+  body.playing .gear-btn{ top:max(10px, env(safe-area-inset-top)); }
+  .settings{ position:absolute; inset:0; z-index:40; display:flex; align-items:center; justify-content:center; background:rgba(2,2,4,.78); }
+  .settings-card{ background:#151118; border:1px solid var(--panel-edge); border-radius:6px; padding:22px 26px; width:min(340px, 88vw); }
+  .settings-title{ font-family:'Pirata One', serif; font-size:1.5rem; margin:0 0 12px; letter-spacing:.04em; }
+  .settings-card label{ display:block; margin:0 0 12px; font-family:'Space Mono', monospace; font-size:.66rem; letter-spacing:.1em; text-transform:uppercase; color:var(--bone-dim); }
+  .settings-card input[type=range]{ width:100%; margin-top:4px; accent-color:#b3202f; }
+  .settings-card label.row{ display:flex; align-items:center; gap:8px; text-transform:none; letter-spacing:.04em; font-size:.74rem; }
+  .settings-card .hint{ opacity:.55; }
+  .settings-actions{ display:flex; gap:10px; margin-top:16px; flex-wrap:wrap; }
+  .settings-actions .cta{ margin:0; font-size:.8rem; padding:8px 14px; }
+  body.noshake .shaking{ animation:none !important; }
+  body.noflash .flash{ display:none !important; }
+  .mute-btn{ position:absolute; top:12px; left:50%; margin-left:70px; font-family:'Space Mono', monospace; font-size:.6rem; letter-spacing:.1em; padding:5px 10px; background:rgba(20,16,22,.6); color:#8fbf8a; border:1px solid rgba(143,191,138,.5); border-radius:3px; cursor:pointer; z-index:5; }
+  .mute-btn.muted{ color:#c25a5a; border-color:rgba(194,90,90,.6); }
+  body.playing .mute-btn{ top:max(10px, env(safe-area-inset-top)); }
   .hud .net-list{ position:absolute; left:14px; top:44px; font-family:'Space Mono', monospace; font-size:.58rem; letter-spacing:.08em; text-transform:uppercase; color:rgba(217,208,198,.55); line-height:1.6; pointer-events:none; }
   .hud .net-list .dead{ text-decoration:line-through; opacity:.5; }
   .hud .net-list .out{ color:var(--win); }
@@ -670,8 +689,9 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
               </div>
               <button id="lb-start" class="cta stamp small"><span>GO IN</span></button>
             </div>
+            <button id="lb-ready" class="lb-btn">I'm ready</button>
             <div class="lb-wait" id="lb-wait">waiting for the host to open the door&hellip;</div>
-            <div class="lb-voice"><button id="lb-mic" class="lb-btn">voice: off</button><span id="lb-mic-note">co-op: everyone on the call &middot; playing Pun: survivors whisper when close</span></div>
+            <div class="lb-voice"><button id="lb-mic" class="lb-btn">voice: off</button><span id="lb-mic-note">voice starts when you join &middot; co-op hears everyone, playing Pun whispers when close</span></div>
             <button id="lb-leave" class="lb-btn ghost">leave</button>
           </div>
         </div>
@@ -708,6 +728,22 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
       <div class="toast" id="toast"></div>
       <div class="subtitle" id="subtitle"></div>
       <button class="menu-btn" id="menu-btn">&larr; Menu</button>
+      <button class="mute-btn hidden" id="mute-btn">MIC</button>
+      <button class="gear-btn" id="gear-btn" aria-label="Settings">&#9881;</button>
+      <div class="settings hidden" id="settings">
+        <div class="settings-card">
+          <p class="settings-title" id="settings-title">Settings</p>
+          <label>Game volume <input type="range" id="set-master" min="0" max="100" value="100"></label>
+          <label>Friends' voices <input type="range" id="set-voice" min="0" max="100" value="100"></label>
+          <label class="row"><input type="checkbox" id="set-shake" checked> Screen shake</label>
+          <label class="row"><input type="checkbox" id="set-flash" checked> Flashes <span class="hint">(off is kinder on the eyes)</span></label>
+          <label class="row"><input type="checkbox" id="set-lowq"> Low quality <span class="hint">(smoother on weak phones)</span></label>
+          <div class="settings-actions">
+            <button class="cta" id="settings-close">Keep playing</button>
+            <button class="cta ghost" id="settings-menu">Leave to menu</button>
+          </div>
+        </div>
+      </div>
       <div class="stick" id="stick"><div class="ring"></div><div class="knob" id="knob"></div></div>
       <button class="act-btn" id="act-btn">HIDE</button>
 
@@ -1703,7 +1739,7 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
 
   function updateAudio(dread, hunting, dist, hidden, nowMs, prox, pan){
     if (!A.ctx) return;
-    A.master.gain.value = 0.50 + dread*0.30;
+    A.master.gain.value = (0.50 + dread*0.30) * SET.master;
     A.padFilt.frequency.value = 300 + dread*700;
     A.padG.gain.value = 0.06 + dread*0.06;
     A.subG.gain.value = 0.07 + dread*0.16;
@@ -2800,7 +2836,7 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
     if (!e.repeat) struggle();
     var k=e.key.toLowerCase(); keys[k]=true;
     if (k==='shift') sprintHeld=true;
-    if (k==='e') actPressed=true;
+    if (k==='e'){ if (phase==='dead') cycleSpectate(); else actPressed=true; }
     if (['arrowup','arrowdown','arrowleft','arrowright',' '].indexOf(k)!==-1) e.preventDefault();
   });
   window.addEventListener('keyup',function(e){
@@ -2863,7 +2899,7 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
   ['touchmove','touchstart'].forEach(function(evt){ frame.addEventListener(evt, function(e){ if (document.body.classList.contains('playing') && !e.target.closest('button')) e.preventDefault(); }, {passive:false}); });
 
   $('act-btn').addEventListener('pointerdown', function(e){
-    e.preventDefault(); actPressed=true; struggle();
+    e.preventDefault(); if (phase==='dead'){ cycleSpectate(); return; } actPressed=true; struggle();
   });
   // tapping the view also counts as struggling, for phones
   frame.addEventListener('pointerdown', function(){ struggle(); });
@@ -2979,7 +3015,7 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
         trapped=true;
         trapMax = (diffName==='nightmare') ? 3.2 : (diffName==='easy' ? 2.0 : 2.6);
         trapTimer = trapMax;
-        trapSnap(); netSend('trap',{x:player.x,z:player.z});
+        trapSnap(); netSend('trap',{x:player.x,z:player.z,i:ti});
         // the noise gives your position away
         graceLeft=0; huntMode=true; searchTimer=0;
         lastKnown={ x:player.x, z:player.z };
@@ -3573,6 +3609,7 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
   // wardrobes announce themselves: a seam of light down the door and a knob
   // that catches the lantern, brighter as you get near
   function drawHideMarkers(now){
+    if (NET.isPun) return;   // the monster does not get shown where people hide
     for (var i=0;i<hideSpots.length;i++){
       var h=hideSpots[i], dd=dist(player.x,player.z,h.x,h.z);
       if (dd>9) continue;
@@ -3969,6 +4006,7 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
     // keep the total pixel count sane; phones get a tighter budget because the
     // post chain is fill-rate bound
     var maxPx = touch ? 1000000 : 2400000;
+    if (typeof SET!=='undefined' && SET.lowq) maxPx=Math.round(maxPx*0.45);
     if (pxW*pxH > maxPx){
       var k=Math.sqrt(maxPx/(pxW*pxH));
       pxW=Math.round(pxW*k); pxH=Math.round(pxH*k);
@@ -4024,14 +4062,27 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
       var st=ch.presenceState(), seen={};
       for (var k in st){ var m=st[k][0]; if (!m || k===NET.me) continue; seen[k]=1;
         if (!NET.peers[k]) NET.peers[k]={ id:k, name:m.name, host:!!m.host, x:0,z:0,tx:0,tz:0,yaw:0,tyaw:0,moving:false,sprinting:false,hidden:false,dead:false,out:false,animT:0,pose:null,role:'survivor',seenAt:0 };
-        NET.peers[k].name=m.name; NET.peers[k].host=!!m.host;
+        NET.peers[k].name=m.name; NET.peers[k].host=!!m.host; NET.peers[k].ready=!!m.ready;
       }
-      for (var k3b in NET.peers) if (!NET.peers[k3b].announced){ NET.peers[k3b].announced=true; lobbyPing(NET.peers[k3b].name+' joined'); if (VOICE.on) voiceConnect(k3b); if (isHost() && NET.started && running) setTimeout(function(){ netSend('start',{ seed:NET.seed, mode:NET.mode, pun:NET.punId, diff:diffName, late:true }); }, 400); }
-      for (var k2 in NET.peers) if (!seen[k2]){ lobbyPing(NET.peers[k2].name+' left'); voiceDrop(k2); delete NET.peers[k2]; }
+      for (var k3b in NET.peers) if (!NET.peers[k3b].announced){ NET.peers[k3b].announced=true; lobbyPing(NET.peers[k3b].name+' joined'); if (VOICE.on) voiceConnect(k3b); if (isHost() && NET.started && running) setTimeout(function(){ netSend('start',{ seed:NET.seed, mode:NET.mode, pun:NET.punId, diff:diffName, late:true, world:worldState() }); }, 400); }
+      for (var k2 in NET.peers) if (!seen[k2]){
+        var wasPun = NET.started && NET.mode==='vs' && k2===NET.punId;
+        lobbyPing(NET.peers[k2].name+' left'); voiceDrop(k2); delete NET.peers[k2];
+        if (wasPun){
+          // the player behind the monster is gone; the house itself takes over
+          NET.mode='coop'; NET.punId=null;
+          creature.cell=cellOf(creature.x,creature.z); creaturePath=[]; lastKnown=null;
+          if (document.body.classList.contains('playing')) showToast('Pun is gone. The house has him now.', true);
+        }
+      }
       // if the host vanished, the earliest remaining player takes over
       if (!isHost()){ var hostAlive=false; for (var k3 in NET.peers) if (NET.peers[k3].host) hostAlive=true;
         if (hostAlive) NET.hostSeen=true;
-        if (NET.hostSeen && !hostAlive && !NET.started){ var ids=Object.keys(NET.peers).concat([NET.me]).sort(); if (ids[0]===NET.me){ NET.role='host'; lbHostbox.classList.remove('hidden'); ch.track({name:NET.name,host:true}); } } }
+        if (NET.hostSeen && !hostAlive){ var ids=Object.keys(NET.peers).concat([NET.me]).sort(); if (ids[0]===NET.me){
+          NET.role='host'; lbHostbox.classList.remove('hidden'); ch.track({name:NET.name,host:isHost(),ready:NET.ready});
+          if (NET.started && NET.mode==='coop' && !NET.isPun){ creature.cell=cellOf(creature.x,creature.z); creaturePath=[]; }
+          if (document.body.classList.contains('playing')) showToast('The host left — you hold the keys now');
+        } } }
       renderRoster();
     });
     ch.on('broadcast',{event:'start'},function(m){ if (isHost()) return; if (m.payload.late && NET.started) return; netStart(m.payload); });
@@ -4044,10 +4095,12 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
     ch.on('broadcast',{event:'key'},function(m){ var k=keyItems[m.payload.i]; if (k && !k.taken){ k.taken=true; keysHeld++; keyChime(); updateKeysHud(); var who=NET.peers[m.payload.from]; showToast((who?who.name:'someone')+' found key '+keysHeld+' of '+keyItems.length);
       if (keysHeld>=keyItems.length){ endgame=true; graceLeft=0; awakenStinger(); setTimeout(function(){ voice(pick('gomad1','gomad2'),{vol:1.0,cool:0}); },350); showToast('He knows. Run for the door.', true); } } });
     ch.on('broadcast',{event:'rtc'},function(m){ voiceSignal(m.payload); });
+    ch.on('broadcast',{event:'round'},function(m){ netRoundEnd(m.payload); });
+    ch.on('broadcast',{event:'lobby'},function(m){ if (!isHost()) backToLobby(); });
     ch.on('broadcast',{event:'voice'},function(m){ voice(m.payload.k,{vol:1.0,minGap:0,cool:0,local:true}); });
     ch.on('broadcast',{event:'dead'},function(m){ var q=NET.peers[m.payload.from]; if (q){ q.dead=true; showToast('He got '+q.name, true); } });
     ch.on('broadcast',{event:'out'},function(m){ var q=NET.peers[m.payload.from]; if (q){ q.out=true; showToast(q.name+' made it out'); } });
-    ch.on('broadcast',{event:'trap'},function(m){ var q=NET.peers[m.payload.from]; if (q) showToast((q.name)+' is in a trap', true); if (isHost() && !NET.isPun){ huntMode=true; searchTimer=0; lastKnown={x:m.payload.x,z:m.payload.z}; } });
+    ch.on('broadcast',{event:'trap'},function(m){ var q=NET.peers[m.payload.from]; if (q) showToast((q.name)+' is in a trap', true); if (typeof m.payload.i==='number' && traps[m.payload.i]) traps[m.payload.i].sprung=true; if (isHost() && !NET.isPun){ huntMode=true; searchTimer=0; lastKnown={x:m.payload.x,z:m.payload.z}; } });
     ch.subscribe(function(status){
       if (status==='SUBSCRIBED'){ lbStatus.textContent=asHost?'you are the host':'in'; ch.track({ name:NET.name, host:asHost }); }
       else if (status==='CHANNEL_ERROR' || status==='TIMED_OUT'){ lbStatus.textContent='connection failed — try again'; }
@@ -4059,6 +4112,14 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
     NET.on=false; NET.role='solo'; NET.chan=null; NET.peers={}; NET.isPun=false; NET.started=false; NET.remoteCreature=null;
     lbJoin.classList.remove('hidden'); lbRoom.classList.add('hidden'); netList.textContent=''; startBtn.style.display='';
   }
+  var lbReady=$('lb-ready'), lbStart=$('lb-start');
+  NET.ready=false;
+  lbReady.addEventListener('click', function(){
+    NET.ready=!NET.ready; lbReady.textContent = NET.ready ? 'ready ✓' : "I'm ready"; lbReady.classList.toggle('on', NET.ready);
+    if (NET.chan) NET.chan.track({ name:NET.name, host:isHost(), ready:NET.ready });
+    renderRoster();
+  });
+  function readyCount(){ var n=0, r=0; for (var k in NET.peers){ n++; if (NET.peers[k].ready) r++; } return {n:n, r:r}; }
   var lbNote=null;
   function lobbyPing(text){
     if (!lbNote){ lbNote=document.createElement('div'); lbNote.className='lb-note'; lbRoster.parentNode.insertBefore(lbNote, lbRoster.nextSibling); }
@@ -4067,13 +4128,16 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
     try{ initAudio(); if (A.ctx){ if (A.ctx.state==='suspended') A.ctx.resume(); knockSound(0); } }catch(e){}
   }
   function renderRoster(){
-    var html='<li><span>'+NET.name+' (you)</span><span class="tag">'+(isHost()?'host':'')+'</span></li>';
+    var html='<li><span>'+NET.name+' (you)</span><span class="tag">'+(isHost()?'host · ':'')+(NET.ready?'ready ✓':'not ready')+'</span></li>';
     var opts='<option value="'+NET.me+'">'+NET.name+' (me)</option>';
-    for (var k in NET.peers){ var q=NET.peers[k]; html+='<li><span>'+q.name+'</span><span class="tag">'+(q.host?'host':'')+'</span></li>'; opts+='<option value="'+k+'">'+q.name+'</option>'; }
+    for (var k in NET.peers){ var q=NET.peers[k]; html+='<li><span>'+q.name+'</span><span class="tag">'+(q.host?'host · ':'')+(q.ready?'ready ✓':'not ready')+'</span></li>'; opts+='<option value="'+k+'">'+q.name+'</option>'; }
     lbRoster.innerHTML=html; var cur=lbPun.value; lbPun.innerHTML=opts; if (cur) lbPun.value=cur;
+    var rc=readyCount();
+    lbStart.disabled = rc.n>0 && rc.r<rc.n;
+    lbStart.querySelector('span').textContent = rc.n>0 ? ('GO IN · '+rc.r+'/'+rc.n+' ready') : 'GO IN';
   }
-  $('lb-create').addEventListener('click', function(){ joinRoom(roomCode(), true); });
-  $('lb-join').addEventListener('click', function(){ var c=(lbCode.value||'').toUpperCase().replace(/[^A-Z0-9]/g,''); if (c.length===4) joinRoom(c,false); else lbCode.focus(); });
+  $('lb-create').addEventListener('click', function(){ joinRoom(roomCode(), true); voiceStart(); });
+  $('lb-join').addEventListener('click', function(){ var c=(lbCode.value||'').toUpperCase().replace(/[^A-Z0-9]/g,''); if (c.length===4){ joinRoom(c,false); voiceStart(); } else lbCode.focus(); });
   $('lb-leave').addEventListener('click', leaveRoom);
   $('lb-start').addEventListener('click', function(){
     var mode=document.querySelector('input[name=lbmode]:checked').value;
@@ -4081,19 +4145,35 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
     var msg={ seed:(Math.random()*2147483647)|0, mode:mode, pun:pun, diff:diffName };
     netSend('start', msg); netStart(msg);
   });
+  function worldState(){
+    var kk=[], tt=[];
+    for (var i=0;i<keyItems.length;i++) if (keyItems[i].taken) kk.push(i);
+    for (var j=0;j<traps.length;j++) if (traps[j].sprung) tt.push(j);
+    return { k:kk, t:tt, e:endgame };
+  }
+  function applyWorld(w){
+    if (!w) return;
+    (w.k||[]).forEach(function(i){ if (keyItems[i] && !keyItems[i].taken){ keyItems[i].taken=true; keysHeld++; } });
+    (w.t||[]).forEach(function(j){ if (traps[j]) traps[j].sprung=true; });
+    if (w.e){ endgame=true; graceLeft=0; }
+    updateKeysHud();
+  }
   function netStart(m){
     NET.seed=m.seed; NET.mode=m.mode; NET.punId=m.pun; NET.isPun=(m.mode==='vs' && m.pun===NET.me);
+    NET.lateWorld=m.world||null;
     NET.started=true; NET.dead=false; NET.out=false; NET.roundOver=false; NET.remoteCreature=null;
     for (var k in NET.peers){ var q=NET.peers[k]; q.dead=false; q.out=false; q.role=(m.mode==='vs'&&k===m.pun)?'pun':'survivor'; }
     diffName=m.diff; D=DIFFS[diffName];
     initAudio(); if (A.ctx && A.ctx.state==='suspended') A.ctx.resume();
     if (A.ctx) A.master.gain.setTargetAtTime(0.6, A.ctx.currentTime, 0.2);
     startScreen.classList.add('hidden'); gameScreen.classList.remove('hidden');
+    endButtons(); muteBtn.classList.toggle('hidden', !VOICE.on);
     startRun();
   }
   function netOnReset(){
     if (!NET.on) return;
-    if (VOICE.stream) VOICE.stream.getAudioTracks().forEach(function(t){ t.enabled=!NET.isPun; });
+    if (NET.lateWorld){ applyWorld(NET.lateWorld); NET.lateWorld=null; }
+    if (VOICE.stream) VOICE.stream.getAudioTracks().forEach(function(t){ t.enabled=!voiceMuted && !NET.isPun; });
     NET.dead=false; NET.out=false; NET.roundOver=false;
     if (NET.isPun){
       // you start where the creature would have, and it is you
@@ -4116,7 +4196,7 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
     if (now-NET.lastSend<66) return;
     NET.lastSend=now;
     var pl={ x:+player.x.toFixed(2), z:+player.z.toFixed(2), yaw:+player.yaw.toFixed(2), m:player.moving, s:player.sprinting, h:hidden, r:myRole() };
-    if (VOICE.stream) VOICE.stream.getAudioTracks().forEach(function(t){ t.enabled=!NET.isPun; });
+    if (VOICE.stream) VOICE.stream.getAudioTracks().forEach(function(t){ t.enabled=!voiceMuted && !NET.isPun; });
     if (NET.isPun){ pl.a=+creature.animT.toFixed(2); pl.hu=huntMode; }
     netSend('state', pl);
     if (isHost() && !NET.isPun && NET.mode==='coop') netSend('pun', { x:+creature.x.toFixed(2), z:+creature.z.toFixed(2), yaw:+creature.yaw.toFixed(2), animT:+creature.animT.toFixed(2), hunt:huntMode });
@@ -4132,28 +4212,54 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
     return n;
   }
   function netRoundCheck(){
-    if (!NET.on || NET.roundOver) return;
-    var anyPeer=Object.keys(NET.peers).length>0;
-    if (!anyPeer) return;
+    // the host is the referee: it alone decides the round is over and tells everyone
+    if (!NET.on || NET.roundOver || !isHost() || !NET.started) return;
+    if (Object.keys(NET.peers).length===0) return;
     if (survivorsLeft()>0) return;
-    NET.roundOver=true;
-    var outs=0; for (var k in NET.peers) if (NET.peers[k].out) outs++;
-    if (NET.out) outs++;
+    var outs=0, names=[]; for (var k in NET.peers) if (NET.peers[k].out){ outs++; names.push(NET.peers[k].name); }
+    if (NET.out){ outs++; names.push(NET.name); }
+    var msg={ outs:outs, names:names };
+    netSend('round', msg); netRoundEnd(msg);
+  }
+  function netRoundEnd(m){
+    if (NET.roundOver) return;
+    NET.roundOver=true; NET.started=false;
     running=false; phase='over';
-    frame.classList.remove('shaking','scaring');
+    frame.classList.remove('shaking','scaring'); dreadWash.style.opacity=0; flashEl.classList.remove('fire'); promptEl.classList.add('hidden');
+    var outs=m.outs||0, who=(m.names&&m.names.length)?m.names.join(', '):'';
+    loseOverlay.classList.add('hidden'); winOverlay.classList.add('hidden');
     if (NET.isPun){
-      if (outs===0){ winSub.textContent='Nobody got out. Pun go mad.'; winOverlay.querySelector('.end-title').textContent='YOU GOT THEM ALL'; winOverlay.classList.remove('hidden'); }
-      else { loseSub.textContent=outs+' got past you.'; loseOverlay.querySelector('.end-title').textContent='THEY GOT OUT'; loseOverlay.classList.remove('hidden'); }
-    } else if (NET.dead){
-      loseSub.textContent = outs>0 ? (outs+' of your friends made it out. You did not.') : 'None of you found the door.';
-      loseOverlay.classList.remove('hidden');
+      if (outs===0){ winOverlay.querySelector('.end-title').textContent='YOU GOT THEM ALL'; winSub.textContent='Nobody got out. Pun go mad.'; winOverlay.classList.remove('hidden'); }
+      else { loseOverlay.querySelector('.end-title').textContent='THEY GOT OUT'; loseSub.textContent=who+' got past you.'; loseOverlay.classList.remove('hidden'); }
+    } else if (NET.out){
+      winOverlay.querySelector('.end-title').textContent='You Made It Out'; winSub.textContent = outs>1 ? ('Out with '+(outs-1)+' of the others.') : 'The only one who found the door.'; winOverlay.classList.remove('hidden');
+    } else {
+      loseOverlay.querySelector('.end-title').textContent='HE HAS YOU'; loseSub.textContent = outs>0 ? (who+' made it out. You did not.') : 'None of you found the door.'; loseOverlay.classList.remove('hidden');
     }
   }
-  function spectateTarget(){
-    var best=null, bd=1e9;
-    for (var k in NET.peers){ var q=NET.peers[k]; if (q.dead||q.out||q.role==='pun') continue; var dd=dist(player.x,player.z,q.x,q.z); if (dd<bd){ bd=dd; best=q; } }
-    return best || creature;
+  setInterval(function(){ try{ netRoundCheck(); }catch(e){} }, 600);
+  function backToLobby(){
+    NET.ready=false; lbReady.textContent="I'm ready"; lbReady.classList.remove('on');
+    toMenu();
+    if (NET.chan) NET.chan.track({ name:NET.name, host:isHost(), ready:false });
+    renderRoster(); setTimeout(fitPoster, 60);
   }
+  var specIdx=0;
+  function spectateList(){
+    var out=[];
+    var ids=Object.keys(NET.peers).sort();
+    for (var i=0;i<ids.length;i++){ var q=NET.peers[ids[i]]; if (!q.dead && !q.out) out.push(q); }
+    return out;
+  }
+  function spectateTarget(){
+    var list=spectateList();
+    if (!list.length) return creature;
+    specIdx=specIdx%list.length;
+    var t=list[specIdx];
+    dreadLabel.textContent='HE HAS YOU — WATCHING '+(t.name||'').toUpperCase()+(list.length>1?' · E TO SWITCH':'');
+    return t;
+  }
+  function cycleSpectate(){ specIdx++; }
   function drawPeers(now){
     if (!NET.on) return;
     var i=0;
@@ -4194,17 +4300,30 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
     { urls:['turn:global.relay.metered.ca:80','turn:global.relay.metered.ca:80?transport=tcp','turn:global.relay.metered.ca:443','turns:global.relay.metered.ca:443?transport=tcp'], username:'openrelayproject', credential:'openrelayproject' }
   ] };
   var lbMic=$('lb-mic'), lbMicNote=$('lb-mic-note');
-  lbMic.addEventListener('click', function(){
-    if (VOICE.on){ voiceOff(); return; }
+  var voiceMuted=false;
+  function setMuted(m){
+    voiceMuted=m;
+    if (VOICE.stream) VOICE.stream.getAudioTracks().forEach(function(t){ t.enabled=!m && !(NET.isPun && document.body.classList.contains('playing')); });
+    lbMic.textContent = VOICE.on ? (m?'mic: muted':'mic: on') : 'voice: off';
+    lbMic.classList.toggle('on', VOICE.on && !m);
+    muteBtn.textContent = m ? 'MUTED' : 'MIC';
+    muteBtn.classList.toggle('muted', m);
+  }
+  var muteBtn=$('mute-btn');
+  muteBtn.addEventListener('click', function(){ if (!VOICE.on) return; setMuted(!voiceMuted); });
+  muteBtn.addEventListener('pointerdown', function(e){ e.stopPropagation(); });
+  function voiceStart(){
+    if (VOICE.on) return;
     if (!navigator.mediaDevices || !window.RTCPeerConnection){ lbMicNote.textContent='this browser cannot do voice'; return; }
     navigator.mediaDevices.getUserMedia({ audio:{ echoCancellation:true, noiseSuppression:true, autoGainControl:true }, video:false }).then(function(st){
-      VOICE.stream=st; VOICE.on=true; lbMic.textContent='voice: on'; lbMic.classList.add('on'); voiceStatus();
+      VOICE.stream=st; VOICE.on=true; setMuted(false); voiceStatus();
       for (var k in VOICE.pcs) voiceDrop(k);
       for (var k2 in NET.peers) voiceConnect(k2);
-    }).catch(function(){ lbMicNote.textContent='microphone permission was refused'; });
-  });
+    }).catch(function(){ lbMicNote.textContent='microphone permission was refused — tap the mic button to try again'; });
+  }
+  lbMic.addEventListener('click', function(){ if (!VOICE.on) voiceStart(); else setMuted(!voiceMuted); });
   function voiceOff(){
-    VOICE.on=false; lbMic.textContent='voice: off'; lbMic.classList.remove('on'); lbMicNote.textContent='co-op: everyone on the call · playing Pun: survivors whisper when close';
+    VOICE.on=false; voiceMuted=false; lbMic.textContent='voice: off'; lbMic.classList.remove('on'); muteBtn.classList.remove('muted'); lbMicNote.textContent='voice starts when you join · co-op hears everyone, playing Pun whispers when close';
     if (VOICE.stream){ VOICE.stream.getTracks().forEach(function(t){ t.stop(); }); VOICE.stream=null; }
     for (var k in VOICE.pcs) voiceDrop(k);
   }
@@ -4280,6 +4399,7 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
         if (NET.isPun || q.role==='pun') vol=0;
         pan=Math.max(-1,Math.min(1,(q.x-player.x)/6));
       } else vol=1;   // on the poster, and all through a co-op round, it is a normal call
+      vol*=SET.voice;
       if (Math.abs(vol-n.vol)>0.02){ n.vol=vol; try{ n.el.volume=Math.max(0,Math.min(1,vol)); }catch(e){} n.stream.getAudioTracks().forEach(function(t){ t.enabled = vol>0.05; }); }
       if (n.el.paused) n.el.play().catch(function(){});
     }
@@ -4308,6 +4428,42 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
   window.addEventListener('resize', fitPoster);
   window.addEventListener('load', function(){ fitPoster(); setTimeout(fitPoster, 400); setTimeout(fitPoster, 1500); });
   new MutationObserver(function(){ requestAnimationFrame(fitPoster); }).observe($('lobby'), { childList:true, subtree:true, attributes:true });
+  // ===================== SETTINGS =====================
+  var SET={ master:1, voice:1, shake:true, flash:true, lowq:false };
+  try{ var sv=JSON.parse(localStorage.getItem('eth-settings')||'{}'); for (var sk in sv) SET[sk]=sv[sk]; }catch(e){}
+  var settingsEl=$('settings'), gearBtn=$('gear-btn'), pausedBySettings=false;
+  function saveSet(){ try{ localStorage.setItem('eth-settings', JSON.stringify(SET)); }catch(e){} }
+  function applySet(){
+    document.body.classList.toggle('noshake', !SET.shake);
+    document.body.classList.toggle('noflash', !SET.flash);
+    $('set-master').value=Math.round(SET.master*100); $('set-voice').value=Math.round(SET.voice*100);
+    $('set-shake').checked=SET.shake; $('set-flash').checked=SET.flash; $('set-lowq').checked=SET.lowq;
+  }
+  applySet();
+  $('set-master').addEventListener('input', function(){ SET.master=this.value/100; saveSet(); });
+  $('set-voice').addEventListener('input', function(){ SET.voice=this.value/100; saveSet(); });
+  $('set-shake').addEventListener('change', function(){ SET.shake=this.checked; saveSet(); applySet(); });
+  $('set-flash').addEventListener('change', function(){ SET.flash=this.checked; saveSet(); applySet(); });
+  $('set-lowq').addEventListener('change', function(){ SET.lowq=this.checked; saveSet(); sizeCanvas(); });
+  function openSettings(){
+    settingsEl.classList.remove('hidden');
+    // alone, the house waits for you; together it cannot
+    if (!NET.on && running && phase==='play'){ running=false; pausedBySettings=true; if (A.ctx) A.ctx.suspend(); $('settings-title').textContent='Paused'; }
+    else $('settings-title').textContent='Settings';
+  }
+  function closeSettings(){
+    settingsEl.classList.add('hidden');
+    if (pausedBySettings){ pausedBySettings=false; running=true; lastT=null; if (A.ctx) A.ctx.resume(); requestAnimationFrame(loop); }
+  }
+  gearBtn.addEventListener('click', function(){ if (settingsEl.classList.contains('hidden')) openSettings(); else closeSettings(); });
+  $('settings-close').addEventListener('click', closeSettings);
+  $('settings-menu').addEventListener('click', function(){ closeSettings(); toMenu(); });
+  window.addEventListener('keydown', function(e){
+    if (e.key==='Escape' && document.body.classList.contains('playing')){
+      if (settingsEl.classList.contains('hidden')) openSettings(); else closeSettings();
+    }
+  });
+
   function startRun(){
     document.body.classList.add('playing');
     sizeCanvas();
@@ -4317,9 +4473,10 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
   }
 
   // ---- back to the menu, so the difficulty can be changed
-  function toMenu(){
+  function toMenu(quiet){
+    if (NET.on && NET.started && !NET.roundOver && !NET.dead && !NET.out && !NET.isPun) netSend('dead',{quit:true});
     running=false; NET.started=false;
-    if (VOICE.stream) VOICE.stream.getAudioTracks().forEach(function(t){ t.enabled=true; });
+    if (VOICE.stream) VOICE.stream.getAudioTracks().forEach(function(t){ t.enabled=!voiceMuted; });
     phase='over';
     try{ if (window.speechSynthesis) window.speechSynthesis.cancel(); }catch(e){}
     subtitleEl.classList.remove('show'); subTimer=0;
@@ -4346,9 +4503,18 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
     if (A.ctx) A.master.gain.setTargetAtTime(0.6, A.ctx.currentTime, 0.2);
     startScreen.classList.add('hidden');
     gameScreen.classList.remove('hidden');
+    endButtons(); muteBtn.classList.add('hidden');
     startRun();
   });
+  function endButtons(){
+    var net=NET.on;
+    retryLose.textContent = net ? 'Back to the lobby' : 'Try Again';
+    retryWin.textContent  = net ? 'Back to the lobby' : 'Go Back In';
+    $('menu-btn-lose').style.display = net ? 'none' : '';
+    $('menu-btn-win').style.display  = net ? 'none' : '';
+  }
   function again(){
+    if (NET.on){ if (isHost()) netSend('lobby',{}); backToLobby(); return; }
     if (A.ctx) A.master.gain.setTargetAtTime(0.6, A.ctx.currentTime, 0.3);
     startRun();
   }

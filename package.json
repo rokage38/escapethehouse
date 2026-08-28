@@ -1,0 +1,26 @@
+{
+  "name": "escape-the-house",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Escape the House web game and iOS Capacitor shell",
+  "scripts": {
+    "prepare:web": "node scripts/prepare-web.mjs",
+    "ios:add": "npm run prepare:web && cap add ios",
+    "ios:sync": "npm run prepare:web && cap sync ios",
+    "ios:open": "cap open ios",
+    "ios:assets": "capacitor-assets generate --ios",
+    "ios:release": "npm run ios:sync && npm run ios:assets"
+  },
+  "dependencies": {
+    "@capacitor/app": "8.1.1",
+    "@capacitor/core": "8.5.0",
+    "@capacitor/ios": "8.5.0",
+    "@capacitor/screen-orientation": "8.0.1",
+    "@capacitor/splash-screen": "8.0.2",
+    "@capacitor/status-bar": "8.0.3"
+  },
+  "devDependencies": {
+    "@capacitor/assets": "3.0.5",
+    "@capacitor/cli": "8.5.0"
+  }
+}

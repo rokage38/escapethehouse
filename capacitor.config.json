@@ -1,0 +1,23 @@
+{
+  "appId": "com.rokage.escapethehouse",
+  "appName": "Escape the House",
+  "webDir": "www",
+  "backgroundColor": "#0b0a0d",
+  "ios": {
+    "backgroundColor": "#0b0a0d",
+    "contentInset": "always",
+    "preferredContentMode": "mobile",
+    "scrollEnabled": false
+  },
+  "plugins": {
+    "SplashScreen": {
+      "launchShowDuration": 1200,
+      "launchAutoHide": false,
+      "backgroundColor": "#0b0a0d",
+      "showSpinner": false
+    },
+    "StatusBar": {
+      "overlaysWebView": true
+    }
+  }
+}

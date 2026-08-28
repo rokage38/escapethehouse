@@ -1,22 +1,24 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-<title>Escape the House</title>
-<meta name="description" content="A browser horror game. Search a bloodied procedural house for keys while Pun hunts you, hide in wardrobes, and run for the door. Alone or with friends.">
+<title>MISSING: PUN</title>
+<meta name="description" content="A living-house horror game. Recover the evidence behind Pun's disappearance while unseen corridors rewrite themselves around you. Alone or with friends.">
 <meta name="theme-color" content="#0b0a0d">
 <link rel="manifest" href="manifest.webmanifest">
-<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="apple-touch-icon" href="apple-touch-icon-missing-pun.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Escape">
-<link rel="icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-title" content="MISSING: PUN">
+<link rel="icon" href="icon-missing-pun-192.png">
 <meta property="og:type" content="website">
-<meta property="og:title" content="Escape the House">
-<meta property="og:description" content="Find the keys, hide from Pun, get to the door.">
-<meta property="og:image" content="docs/screenshot.png">
+<meta property="og:title" content="MISSING: PUN">
+<meta property="og:description" content="Recover the evidence. Pin the rooms. Do not let the house rewrite your way out.">
+<meta property="og:image" content="app-icon-missing-pun-1024.png">
 <meta name="twitter:card" content="summary_large_image">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="fonts.css">
+<script src="native-shell.js" defer></script>
 <script>/* supabase-js v2, inlined so the game stays one file */
 /**
  * Skipped minification because the original files appears to be already minified.
@@ -263,8 +265,6 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
   .compass.to-key .needle path{ fill:var(--gold); }
   .compass.to-door .needle path{ fill:var(--win); }
   .compass.to-door{ color:var(--win); }
-  .compass.to-help{ color:var(--blood-bright); }
-  .compass.to-help .needle path{ fill:var(--blood-bright); }
   .status{
     position:absolute; top:12px; left:50%; transform:translateX(-50%);
     font-family:'Space Mono', monospace; font-size:.7rem; letter-spacing:.09em;
@@ -632,6 +632,63 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
     .p-tabs button{ height:92px; }
     .stamp{ font-size:1.6rem; }
   }
+
+  .touch-rule{ display:none; }
+  .touch .desktop-rule{ display:none; }
+  .touch .touch-rule{ display:inline; }
+
+  html.native-app,
+  html.native-app body{
+    width:100%; height:100%; overscroll-behavior:none;
+    -webkit-user-select:none; user-select:none; -webkit-touch-callout:none;
+  }
+  html.native-app input,
+  html.native-app select{ -webkit-user-select:text; user-select:text; }
+  html.native-app .rotate-hint,
+  html.native-app .lb-voice{ display:none !important; }
+  html.native-app body:not(.playing) .stage{
+    padding-left:max(10px, env(safe-area-inset-left));
+    padding-right:max(10px, env(safe-area-inset-right));
+    padding-top:max(10px, env(safe-area-inset-top));
+    padding-bottom:max(10px, env(safe-area-inset-bottom));
+  }
+
+  /* The case file follows you into the house. Evidence appears as a physical
+     slip of paper, then gets out of the way while the chase keeps moving. */
+  .case-card{
+    position:absolute; z-index:18; left:50%; top:58px; width:min(390px,72%);
+    transform:translate(-50%,-14px) rotate(-1deg); opacity:0; pointer-events:none;
+    padding:12px 16px 11px; color:#1b1512;
+    background:linear-gradient(165deg,#eadfc7,#cdbc98);
+    border:1px solid rgba(255,255,255,.28);
+    box-shadow:0 12px 30px rgba(0,0,0,.62), inset 0 0 28px rgba(91,57,27,.12);
+    font-family:'Special Elite','Courier New',monospace;
+    clip-path:polygon(0 2%,8% 0,20% 1%,34% 0,51% 1%,68% 0,84% 1%,100% 0,99% 96%,89% 100%,70% 98%,52% 100%,31% 98%,14% 100%,1% 97%);
+    transition:opacity .22s ease, transform .22s ease;
+  }
+  .case-card.show{ opacity:1; transform:translate(-50%,0) rotate(-1deg); }
+  .case-card::after{ content:""; position:absolute; inset:5px; border:1px dashed rgba(70,45,28,.34); pointer-events:none; }
+  .case-card .case-number{ display:block; color:#7a1420; font-size:.54rem; letter-spacing:.18em; text-transform:uppercase; }
+  .case-card strong{ display:block; margin:3px 0 2px; font-family:'Anton',Impact,sans-serif; font-weight:400; font-size:1.05rem; letter-spacing:.07em; text-transform:uppercase; }
+  .case-card p{ margin:0; font-size:.68rem; line-height:1.3; }
+  .case-card .case-effect{ margin-top:5px; color:#7a1420; font-weight:700; text-transform:uppercase; letter-spacing:.05em; }
+  .house-shift-wash{ position:absolute; inset:0; z-index:9; pointer-events:none; opacity:0; box-shadow:inset 0 0 0 rgba(104,11,23,0); }
+  .house-shifting .house-shift-wash{ animation:houseRewrite 1.45s ease-out; }
+  @keyframes houseRewrite{
+    0%{ opacity:0; box-shadow:inset 0 0 0 rgba(104,11,23,0); }
+    18%{ opacity:.88; box-shadow:inset 0 0 90px rgba(104,11,23,.74); background:rgba(12,3,7,.28); }
+    48%{ opacity:.38; box-shadow:inset 0 0 42px rgba(214,171,92,.32); background:transparent; }
+    100%{ opacity:0; box-shadow:inset 0 0 0 rgba(104,11,23,0); }
+  }
+  @media (max-width:700px){
+    .case-card{ top:40px; width:min(360px,68%); padding:9px 13px; }
+    .case-card strong{ font-size:.82rem; }
+    .case-card p{ font-size:.56rem; }
+  }
+  @media (prefers-reduced-motion:reduce){
+    .house-shifting .house-shift-wash{ animation:none; opacity:.32; }
+    .case-card{ transition:none; }
+  }
 </style>
 
 <div class="grain"></div>
@@ -664,7 +721,7 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
         </div>
         <div class="p-right">
         <div class="p-rules">
-          <span><b>W A S D</b> move</span><span><b>Shift</b> run</span><span><b>E</b> hide in a wardrobe</span><span><b>keys</b> every one, then the door</span>
+          <span class="desktop-rule"><b>W A S D</b> move</span><span class="desktop-rule"><b>Shift</b> run</span><span class="desktop-rule"><b>E</b> hide</span><span class="touch-rule"><b>stick</b> move &amp; run</span><span class="touch-rule"><b>USE</b> hide or escape</span><span><b>evidence</b> pins rooms in place</span>
         </div>
         <div class="p-tabs-label">tear one off &mdash; how long before he notices you</div>
         <div class="diff p-tabs" id="diff">
@@ -683,7 +740,6 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
           </div>
           <div class="lobby-room hidden" id="lobby-room">
             <div class="lb-code-line">room <b id="lb-roomcode">----</b> <span id="lb-status">connecting&hellip;</span></div>
-            <button id="lb-invite" class="lb-btn">invite &mdash; send the link</button>
             <ul class="lb-roster" id="lb-roster"></ul>
             <div class="lb-host hidden" id="lb-hostbox">
               <div class="lb-mode">
@@ -712,6 +768,13 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
       <div class="dread-wash" id="dread-wash"></div>
       <div class="prox-edge" id="prox-edge"></div>
       <div class="flash" id="flash"></div>
+      <div class="house-shift-wash" id="house-shift-wash"></div>
+      <aside class="case-card" id="case-card" aria-live="polite">
+        <span class="case-number" id="case-number">CASE FILE / EVIDENCE</span>
+        <strong id="case-title">Recovered evidence</strong>
+        <p id="case-copy"></p>
+        <p class="case-effect" id="case-effect">This room is pinned. Elsewhere, the house moved.</p>
+      </aside>
       <div class="hud">
         <div class="net-list" id="net-list"></div>
         <div class="hud-block">
@@ -719,9 +782,9 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
           <div class="stamina-track"><div class="stamina-fill" id="stamina-fill"></div></div>
         </div>
         <div class="hud-block hud-right">
-          <span class="keys" id="keys-label">KEYS 0/3</span>
+          <span class="keys" id="keys-label">EVIDENCE 0/3</span>
           <span class="compass to-key" id="compass">
-            <span id="compass-text">nearest key</span>
+            <span id="compass-text">nearest evidence</span>
             <span class="needle" id="needle"><svg viewBox="0 0 24 24"><path d="M12 2 L20 21 L12 16.5 L4 21 Z"/></svg></span>
           </span>
         </div>
@@ -738,6 +801,7 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
           <p class="settings-title" id="settings-title">Settings</p>
           <label>Game volume <input type="range" id="set-master" min="0" max="100" value="100"></label>
           <label>Friends' voices <input type="range" id="set-voice" min="0" max="100" value="100"></label>
+          <label>Lantern brightness <input type="range" id="set-brightness" min="75" max="160" value="112"></label>
           <label class="row"><input type="checkbox" id="set-shake" checked> Screen shake</label>
           <label class="row"><input type="checkbox" id="set-flash" checked> Flashes <span class="hint">(off is kinder on the eyes)</span></label>
           <label class="row"><input type="checkbox" id="set-lowq"> Low quality <span class="hint">(smoother on weak phones)</span></label>
@@ -767,8 +831,8 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
         </div>
       </div>
     </div>
-    <p class="end-sub controls-note" style="opacity:.6"><kbd>W A S D</kbd> move &middot; <kbd>Shift</kbd> run &middot; <kbd>E</kbd> hide</p>
-    <p class="rotate-hint">Turn your phone sideways &middot; touch the left side to walk, the button to hide</p>
+    <p class="end-sub controls-note" style="opacity:.6"><span class="desktop-rule"><kbd>W A S D</kbd> move &middot; <kbd>Shift</kbd> run &middot; <kbd>E</kbd> act</span><span class="touch-rule">left stick move &amp; run &middot; <kbd>USE</kbd> act</span></p>
+    <p class="rotate-hint">Turn your phone sideways &middot; touch the left side to move, USE to act</p>
   </div>
 
 </div>
@@ -783,6 +847,7 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
   var timerEl=$('timer'), staminaFill=$('stamina-fill'), dreadLabel=$('dread-label'), keysLabel=$('keys-label');
   var dreadWash=$('dread-wash'), proxEdgeEl=$('prox-edge'), flashEl=$('flash'), promptEl=$('prompt'), toastEl=$('toast');
   var subtitleEl=$('subtitle');
+  var caseCard=$('case-card'), caseNumber=$('case-number'), caseTitle=$('case-title'), caseCopy=$('case-copy'), caseEffect=$('case-effect');
   var compassEl=$('compass'), compassText=$('compass-text'), needleEl=$('needle');
   var loseOverlay=$('lose-overlay'), winOverlay=$('win-overlay');
   var winSub=$('win-sub'), loseSub=$('lose-sub');
@@ -790,11 +855,20 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
 
   // ===================== DIFFICULTY =====================
   var DIFFS = {
-    easy:      { cols:23, rows:17, slotsX:3, slotsY:3, keys:3, traps:5,  grace:45, stalk:2.35, chase:2.95, rage:4.7,  aware:6.5, lose:12, staminaDrain:26, staminaGain:22 },
-    normal:    { cols:26, rows:17, slotsX:4, slotsY:3, keys:3, traps:9,  grace:30, stalk:2.95, chase:3.45, rage:5.5,  aware:8.5, lose:15, staminaDrain:31, staminaGain:18 },
-    nightmare: { cols:32, rows:20, slotsX:5, slotsY:3, keys:4, traps:14, grace:12, stalk:3.45, chase:3.95, rage:6.15, aware:11,  lose:19, staminaDrain:36, staminaGain:15 }
+    easy:      { cols:23, rows:17, slotsX:3, slotsY:3, evidence:3, traps:5,  grace:45, stalk:2.35, chase:2.95, rage:4.7,  aware:6.5, lose:12, staminaDrain:26, staminaGain:22 },
+    normal:    { cols:26, rows:17, slotsX:4, slotsY:3, evidence:3, traps:9,  grace:30, stalk:2.95, chase:3.45, rage:5.5,  aware:8.5, lose:15, staminaDrain:31, staminaGain:18 },
+    nightmare: { cols:32, rows:20, slotsX:5, slotsY:3, evidence:4, traps:14, grace:12, stalk:3.45, chase:3.95, rage:6.15, aware:11,  lose:19, staminaDrain:36, staminaGain:15 }
   };
   var diffName='normal', D=DIFFS.normal;
+
+  // Every object answers one part of the case and teaches the player the
+  // house's rule. Nightmare adds the watch as a fourth, more ominous clue.
+  var EVIDENCE_CATALOG=[
+    { id:'photo', title:'The impossible photograph', copy:'Pun is visible through the hall window. The photograph is dated the day before he entered.' },
+    { id:'tape', title:'Answerphone cassette', copy:'His voice, barely audible: “The rooms only move when nobody is looking.”' },
+    { id:'plan', title:'Crossed-out floor plan', copy:'A room marked NOT HERE is one you have already walked through.' },
+    { id:'watch', title:'Pun\'s wristwatch', copy:'Stopped at 03:38. The metal is still warm.' }
+  ];
 
   var diffBox=$('diff');
   diffBox.addEventListener('click', function(e){
@@ -811,8 +885,8 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
   var CELL=4, WALL_H=2.5, WALL_HALF=0.18;
   var COLS, ROWS;
   var grid, rooms, wallSegs, adjacency, openCells;
-  var props, propBoxes, hideSpots, keyItems, fires, traps, trapdoors, exitCell, exitDir, startCell;
-  var bathroom, gruesome, bodies;
+  var props, propBoxes, hideSpots, evidenceItems, fires, traps, exitCell, exitDir, startCell;
+  var bathroom, gruesome, bodies, anchoredRooms, houseShifts;
 
   function inb(r,c){ return r>=0 && r<ROWS && c>=0 && c<COLS; }
   function isOpen(r,c){ return inb(r,c) && grid[r][c]===1; }
@@ -965,7 +1039,7 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
     }
   }
 
-  // ---- room furnishing, keys and wardrobes
+  // ---- room furnishing, evidence and wardrobes
   var PROP_SOLID = {
     wardrobe:[0.56,0.32], shelf:[0.60,0.20], bed:[0.94,0.56],
     table:[0.72,0.44], chair:[0.22,0.22], crate:[0.31,0.31],
@@ -1015,8 +1089,8 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
   }
 
   function placeContents(exitRoom){
-    props=[]; hideSpots=[]; keyItems=[]; propBoxes=[]; fires=[]; traps=[]; trapdoors=[];
-    bathroom=null; gruesome={}; bodies=[];
+    props=[]; hideSpots=[]; evidenceItems=[]; propBoxes=[]; fires=[]; traps=[];
+    bathroom=null; gruesome={}; bodies=[]; anchoredRooms={}; houseShifts=[];
     var startRoom = rooms[0];
 
     // wall anchors: room edge cells whose outward neighbour is solid
@@ -1112,15 +1186,15 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
       }
     }
 
-    // keys, spread across rooms that are neither the start nor the exit
+    // evidence, spread across rooms that are neither the start nor the exit
     var pool=[];
     for (var k=0;k<rooms.length;k++){
       if (rooms[k]!==startRoom && rooms[k]!==exitRoom) pool.push(rooms[k]);
     }
     shuffle(pool);
-    if (pool.length < D.keys && exitRoom) pool.push(exitRoom);
-    if (pool.length < D.keys) pool.push(startRoom);
-    var want=Math.min(D.keys, pool.length);
+    if (pool.length < D.evidence && exitRoom) pool.push(exitRoom);
+    if (pool.length < D.evidence) pool.push(startRoom);
+    var want=Math.min(D.evidence, pool.length);
     for (var q=0;q<want;q++){
       var rm=pool[q], kx=0, kz=0, ok=false;
       for (var tries=0; tries<24 && !ok; tries++){
@@ -1128,11 +1202,11 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
         kx=kp.x+(Math.random()-0.5)*1.4; kz=kp.z+(Math.random()-0.5)*1.4;
         ok = !propHit(kx,kz,0.55) && !collides(kx,kz,0.5);
       }
-      keyItems.push({ x:kx, z:kz, taken:false });
+      evidenceItems.push({ x:kx, z:kz, taken:false, type:q%EVIDENCE_CATALOG.length, room:rooms.indexOf(rm) });
     }
-    if (!keyItems.length){
+    if (!evidenceItems.length){
       var fp=cellCenter(rooms[rooms.length-1].cr, rooms[rooms.length-1].cc);
-      keyItems.push({ x:fp.x, z:fp.z, taken:false });
+      evidenceItems.push({ x:fp.x, z:fp.z, taken:false, type:0, room:rooms.length-1 });
     }
 
     // ---- the dead. More of them in the rooms that are already a mess.
@@ -1163,32 +1237,160 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
         if (propHit(tx,tz,0.6) || collides(tx,tz,0.6)) continue;
         var clash=false;
         for (var q2=0;q2<traps.length;q2++) if (dist(tx,tz,traps[q2].x,traps[q2].z)<3){ clash=true; break; }
-        for (var k2=0;k2<keyItems.length;k2++) if (dist(tx,tz,keyItems[k2].x,keyItems[k2].z)<1.6){ clash=true; break; }
+        for (var k2=0;k2<evidenceItems.length;k2++) if (dist(tx,tz,evidenceItems[k2].x,evidenceItems[k2].z)<1.6){ clash=true; break; }
         if (clash) continue;
         traps.push({ x:tx, z:tz, sprung:false, yaw:Math.random()*Math.PI });
         break;
       }
     }
+  }
 
-    // ---- trap doors. Rotten boards that give way under you. Alone you can
-    // claw your way out; together, a friend hauls you up in a second.
-    var tdWant=Math.max(2, (D.traps/3)|0)+1;
-    for (var td=0; td<tdWant; td++){
-      for (var tdt=0; tdt<40; tdt++){
-        var oc2=openCells[(Math.random()*openCells.length)|0];
-        var tc2=cellCenter(oc2.r,oc2.c);
-        var dx2=tc2.x+(Math.random()-0.5)*1.2, dz2=tc2.z+(Math.random()-0.5)*1.2;
-        if (dist(dx2,dz2,sc.x,sc.z) < 10) continue;
-        if (propHit(dx2,dz2,0.9) || collides(dx2,dz2,0.9)) continue;
-        var clash2=false;
-        for (var q3=0;q3<traps.length;q3++) if (dist(dx2,dz2,traps[q3].x,traps[q3].z)<2.5){ clash2=true; break; }
-        for (var q4=0;q4<trapdoors.length;q4++) if (dist(dx2,dz2,trapdoors[q4].x,trapdoors[q4].z)<6){ clash2=true; break; }
-        for (var k3=0;k3<keyItems.length;k3++) if (dist(dx2,dz2,keyItems[k3].x,keyItems[k3].z)<1.6){ clash2=true; break; }
-        if (clash2) continue;
-        trapdoors.push({ x:dx2, z:dz2, open:false });
-        break;
+  // ===================== THE LIVING HOUSE =====================
+  // Evidence pins the room it was found in. The house then closes one unseen,
+  // non-essential corridor cell and opens another, but only if the remaining
+  // floorplan stays fully connected. That makes the rule real without ever
+  // producing an unwinnable seed.
+  function roomIndexAt(r,c){
+    for (var i=0;i<rooms.length;i++){
+      var rm=rooms[i];
+      if (r>=rm.r0 && r<=rm.r1 && c>=rm.c0 && c<=rm.c1) return i;
+    }
+    return -1;
+  }
+  function insideRoom(r,c){ return roomIndexAt(r,c)!==-1; }
+  function anchoredCell(r,c){
+    for (var k in anchoredRooms){
+      if (!anchoredRooms[k]) continue;
+      var rm=rooms[+k]; if (!rm) continue;
+      if (r>=rm.r0-1 && r<=rm.r1+1 && c>=rm.c0-1 && c<=rm.c1+1) return true;
+    }
+    return false;
+  }
+  function openNeighbourCount(r,c){
+    var n=0;
+    if (isOpen(r-1,c)) n++; if (isOpen(r+1,c)) n++;
+    if (isOpen(r,c-1)) n++; if (isOpen(r,c+1)) n++;
+    return n;
+  }
+  function gridConnected(){
+    var first=null, total=0;
+    for (var r=0;r<ROWS;r++) for (var c=0;c<COLS;c++) if (grid[r][c]===1){ total++; if (!first) first={r:r,c:c}; }
+    if (!first) return false;
+    var seen={}, q=[first], head=0; seen[first.r*COLS+first.c]=1;
+    while (head<q.length){
+      var at=q[head++], nbs=[[at.r-1,at.c],[at.r+1,at.c],[at.r,at.c-1],[at.r,at.c+1]];
+      for (var i=0;i<4;i++){
+        var nr=nbs[i][0], nc=nbs[i][1], id=nr*COLS+nc;
+        if (!isOpen(nr,nc) || seen[id]) continue;
+        seen[id]=1; q.push({r:nr,c:nc});
       }
     }
+    return q.length===total;
+  }
+  function shiftCellIsClear(r,c){
+    if (!inb(r,c) || r<1 || c<1 || r>=ROWS-1 || c>=COLS-1) return false;
+    if ((startCell && r===startCell.r && c===startCell.c) || (exitCell && r===exitCell.r && c===exitCell.c)) return false;
+    if (anchoredCell(r,c)) return false;
+    var p=cellCenter(r,c), safe=9.5;
+    function tooNear(x,z,range){ return typeof x==='number' && dist(p.x,p.z,x,z)<(range||safe); }
+    if (player && tooNear(player.x,player.z)) return false;
+    if (creature && tooNear(creature.x,creature.z,7.5)) return false;
+    if (typeof NET!=='undefined' && NET){
+      if (NET.remoteCreature && tooNear(NET.remoteCreature.x,NET.remoteCreature.z,7.5)) return false;
+      for (var id in NET.peers){ var peer=NET.peers[id]; if (peer && !peer.dead && !peer.out && tooNear(peer.x,peer.z)) return false; }
+    }
+    for (var i=0;i<evidenceItems.length;i++) if (!evidenceItems[i].taken && tooNear(evidenceItems[i].x,evidenceItems[i].z,2.4)) return false;
+    for (var j=0;j<traps.length;j++) if (!traps[j].sprung && tooNear(traps[j].x,traps[j].z,1.8)) return false;
+    return true;
+  }
+  function planHouseShift(){
+    var close=[];
+    for (var r=1;r<ROWS-1;r++) for (var c=1;c<COLS-1;c++){
+      if (grid[r][c]!==1 || insideRoom(r,c) || openNeighbourCount(r,c)<2 || !shiftCellIsClear(r,c)) continue;
+      close.push({r:r,c:c});
+    }
+    shuffle(close);
+    for (var i=0;i<close.length;i++){
+      var shut=close[i]; grid[shut.r][shut.c]=0;
+      if (!gridConnected()){ grid[shut.r][shut.c]=1; continue; }
+      var open=[];
+      for (var rr=1;rr<ROWS-1;rr++) for (var cc=1;cc<COLS-1;cc++){
+        if (grid[rr][cc]!==0 || insideRoom(rr,cc) || anchoredCell(rr,cc) || !shiftCellIsClear(rr,cc)) continue;
+        if (openNeighbourCount(rr,cc)<2 || Math.abs(rr-shut.r)+Math.abs(cc-shut.c)<4) continue;
+        open.push({r:rr,c:cc});
+      }
+      shuffle(open);
+      if (open.length){
+        var reveal=open[0]; grid[reveal.r][reveal.c]=1;
+        var valid=gridConnected();
+        grid[reveal.r][reveal.c]=0; grid[shut.r][shut.c]=1;
+        if (valid) return { close:[shut.r,shut.c], open:[reveal.r,reveal.c] };
+      } else grid[shut.r][shut.c]=1;
+    }
+    return null;
+  }
+  function applyHouseShift(spec, record, quiet){
+    if (!spec || !spec.close || !spec.open) return false;
+    var cr=spec.close[0], cc=spec.close[1], or=spec.open[0], oc=spec.open[1];
+    if (!inb(cr,cc) || !inb(or,oc)) return false;
+    grid[cr][cc]=0; grid[or][oc]=1;
+    buildTopology();
+    if (glOK) buildLevelMesh();
+    creaturePath=[]; lastPath=0;
+    if (creature) creature.cell=cellOf(creature.x,creature.z);
+    if (record!==false) houseShifts.push({ close:[cr,cc], open:[or,oc] });
+    if (!quiet){
+      frame.classList.remove('house-shifting'); void frame.offsetWidth; frame.classList.add('house-shifting');
+      setTimeout(function(){ frame.classList.remove('house-shifting'); },1500);
+      if (A && A.ctx) doorSlam();
+    }
+    return true;
+  }
+
+  var caseTimer=null;
+  function revealEvidence(item, index, moved, finder){
+    var clue=EVIDENCE_CATALOG[item.type]||EVIDENCE_CATALOG[0];
+    caseNumber.textContent='CASE FILE 38 / EVIDENCE '+String(index+1).padStart(2,'0')+(finder?' / '+finder.toUpperCase():'');
+    caseTitle.textContent=clue.title;
+    caseCopy.textContent=clue.copy;
+    caseEffect.textContent=moved ? 'Room pinned. Elsewhere, the house moved.' : 'Room pinned. This time, the house held.';
+    clearTimeout(caseTimer); caseCard.classList.add('show');
+    caseTimer=setTimeout(function(){ caseCard.classList.remove('show'); },4200);
+  }
+  function evidenceEndgame(at){
+    if (endgame) return;
+    endgame=true; huntMode=true; searchTimer=0; graceLeft=0;
+    lastKnown=at||{x:player.x,z:player.z};
+    awakenStinger();
+    setTimeout(function(){ voice(pick('gomad1','gomad2'),{vol:1.0,cool:0}); },350);
+    flashEl.classList.remove('fire'); void flashEl.offsetWidth; flashEl.classList.add('fire');
+    showToast('The case is complete. Pun knows. Run.', true);
+  }
+  function collectEvidence(index, opts){
+    opts=opts||{};
+    var item=evidenceItems[index]; if (!item || item.taken) return false;
+    item.taken=true; evidenceHeld++;
+    if (item.room>=0) anchoredRooms[item.room]=true;
+    var shift = Object.prototype.hasOwnProperty.call(opts,'shift') ? opts.shift : planHouseShift();
+    var moved=applyHouseShift(shift);
+    keyChime(); updateEvidenceHud();
+    revealEvidence(item,index,moved,opts.finder||'');
+    var at=opts.at||{x:item.x,z:item.z};
+    if (opts.broadcast) netSend('evidence',{i:index,shift:shift,at:at});
+    if (evidenceHeld>=evidenceItems.length) evidenceEndgame(at);
+    return true;
+  }
+
+  function usePunShift(){
+    if (!NET.isPun) return false;
+    if (punShiftCd>0){ showToast('The house is still settling — '+Math.ceil(punShiftCd)+'s', true); return false; }
+    if (punRage<55){ showToast('Not enough house rage.', true); return false; }
+    var shift=planHouseShift();
+    if (!shift){ showToast('Every unseen passage is pinned.', true); return false; }
+    punRage-=55; punShiftCd=12;
+    applyHouseShift(shift); netSend('house-shift',{shift:shift});
+    updateEvidenceHud(); showToast('You rewrote an unseen corridor.', true);
+    return true;
   }
 
   // ===================== COLLISION & PATHING =====================
@@ -2221,7 +2423,7 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
     'precision highp float;',
     'varying vec2 vUv;',
     'uniform sampler2D uScene, uBloom;',
-    'uniform float uTime, uDread, uWarp, uGrain, uFade;',
+    'uniform float uTime, uDread, uWarp, uGrain, uFade, uBrightness;',
     '',
     'float hash(vec2 p){ return fract(sin(dot(p, vec2(127.1,311.7))) * 43758.5453); }',
     '',
@@ -2269,7 +2471,7 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
     '  // faint horizontal scan, so it never looks digitally clean',
     '  col *= 1.0 - 0.018*abs(sin(vUv.y*720.0));',
     '',
-    '  col *= uFade;',
+    '  col *= uFade * uBrightness;',
     '  gl_FragColor = vec4(col, 1.0);',
     '}'
   ].join('\n');
@@ -2376,6 +2578,7 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
     gl.uniform1f(gl.getUniformLocation(post.pComp,'uWarp'), warp);
     gl.uniform1f(gl.getUniformLocation(post.pComp,'uGrain'), 0.055 + dread*0.075);
     gl.uniform1f(gl.getUniformLocation(post.pComp,'uFade'), fade);
+    gl.uniform1f(gl.getUniformLocation(post.pComp,'uBrightness'), SET.brightness);
     drawQuad(post.pComp);
     gl.activeTexture(gl.TEXTURE0);
 
@@ -2727,14 +2930,15 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
   // ===================== STATE =====================
   var player, creature, startTime, running, phase;
   var huntMode, lastKnown, searchTimer, graceLeft;
-  var keysHeld, hidden, hideSpot, scareT, endgame, trapped, trapTimer, trapMax;
-  var fallen=false, fallenIdx=-1, climbMash=0, fallImmune=0, helpCool=0;
+  var evidenceHeld, hidden, hideSpot, scareT, endgame, trapped, trapTimer, trapMax;
   var girl;
   // the lantern gutters and can die outright when she is close
   var lightFade=1, lanternHealth=1, gutterTimer=0, nextWhisper=0, nextSlam=0;
   var keys={}, joy={x:0,y:0,mag:0}, sprintHeld=false, actPressed=false, stamina=100;
   var creaturePath=[], lastPath=0, loseTimer=0, motes=[];
   var toastTimer=0;
+  var punMemory={ checkSpot:null, checkT:0, warned:false, heardSprint:false };
+  var punRage=70, punShiftCd=0;
 
   var PLAYER_R=0.40, WALK=3.5, SPRINT=6.0;
   var CATCH_DIST=0.8;
@@ -2766,8 +2970,7 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
 
     huntMode=false; lastKnown=null; searchTimer=0;
     graceLeft=D.grace;
-    keysHeld=0; hidden=false; hideSpot=null; scareT=0; endgame=false;
-    fallen=false; fallenIdx=-1; climbMash=0; fallImmune=0; helpCool=0;
+    evidenceHeld=0; hidden=false; hideSpot=null; scareT=0; endgame=false;
     trapped=false; trapTimer=0; trapMax=1;
     girl={ active:false, x:0, z:0, fade:0, said:false, next:8+Math.random()*10, spoken:0 };
     initScares();
@@ -2777,6 +2980,8 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
     nextWhisper=performance.now()+18000+Math.random()*20000;
     nextSlam=performance.now()+12000+Math.random()*16000;
     stamina=100; creaturePath=[]; lastPath=0; loseTimer=0; toastTimer=0;
+    punMemory={ checkSpot:null, checkT:0, warned:false, heardSprint:false };
+    punRage=70; punShiftCd=0;
     startTime=performance.now();
     phase='play';
 
@@ -2791,7 +2996,8 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
       ph:Math.random()*6.28, sp:0.16+Math.random()*0.35, sz:0.028+Math.random()*0.03
     });
 
-    updateKeysHud();
+    updateEvidenceHud();
+    clearTimeout(caseTimer); caseCard.classList.remove('show'); frame.classList.remove('house-shifting');
     dreadWash.style.opacity=0; proxEdgeEl.style.opacity=0;
     promptEl.classList.add('hidden');
     toastEl.classList.remove('show');
@@ -2810,20 +3016,10 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
       compassText.textContent = T.hidden ? 'they are hiding' : ('nearest one '+Math.round(dd)+'m');
       compassEl.className='compass to-door'; return;
     }
-    if (NET.on){
-      var hb=null, hd=1e9;
-      for (var hk in NET.peers){ var hq=NET.peers[hk]; if (hq.fallen && hq.helpUntil && performance.now()<hq.helpUntil && !hq.dead && !hq.out){ var hdd=dist(player.x,player.z,hq.x,hq.z); if (hdd<hd){ hd=hdd; hb=hq; } } }
-      if (hb && !fallen){
-        var angH=Math.atan2(hb.x-player.x, -(hb.z-player.z))*180/Math.PI;
-        needleEl.style.transform='rotate('+angH.toFixed(1)+'deg)';
-        compassText.textContent=hb.name+' needs help '+Math.round(hd)+'m';
-        compassEl.className='compass to-help'; return;
-      }
-    }
     var tx, tz, toDoor=false;
     var best=Infinity, found=null;
-    for (var i=0;i<keyItems.length;i++){
-      var k=keyItems[i]; if (k.taken) continue;
+    for (var i=0;i<evidenceItems.length;i++){
+      var k=evidenceItems[i]; if (k.taken) continue;
       var dd=dist(player.x,player.z,k.x,k.z);
       if (dd<best){ best=dd; found=k; }
     }
@@ -2831,7 +3027,7 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
     else { var ed=doorTransform(); tx=ed.x; tz=ed.z; toDoor=true; best=dist(player.x,player.z,tx,tz); }
     var ang = Math.atan2(tx-player.x, -(tz-player.z)) * 180/Math.PI;
     needleEl.style.transform = 'rotate('+ang.toFixed(1)+'deg)';
-    compassText.textContent = (toDoor?'the door ':'nearest key ') + Math.round(best) + 'm';
+    compassText.textContent = (toDoor?'the door ':'nearest evidence ') + Math.round(best) + 'm';
     compassEl.className = 'compass ' + (toDoor?'to-door':'to-key');
   }
 
@@ -2849,9 +3045,16 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
       : 'linear-gradient(270deg, rgba(120,10,18,'+(edge*pan).toFixed(3)+') 0%, rgba(0,0,0,0) 35%)';
   }
 
-  function updateKeysHud(){
-    keysLabel.textContent='KEYS '+keysHeld+'/'+keyItems.length;
-    keysLabel.classList.toggle('done', keysHeld>=keyItems.length);
+  function updateEvidenceHud(){
+    if (NET.isPun){
+      keysLabel.textContent='HOUSE RAGE '+Math.floor(punRage);
+      keysLabel.classList.toggle('done', punRage>=55);
+      $('act-btn').textContent=punShiftCd>0?('SHIFT '+Math.ceil(punShiftCd)):'SHIFT';
+    } else {
+      keysLabel.textContent='EVIDENCE '+evidenceHeld+'/'+evidenceItems.length;
+      keysLabel.classList.toggle('done', evidenceHeld>=evidenceItems.length);
+      $('act-btn').textContent='HIDE';
+    }
   }
   function showToast(msg, locked){
     toastEl.textContent=msg;
@@ -2862,7 +3065,6 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
 
   // ===================== INPUT =====================
   function struggle(){
-    if (fallen){ climbMash++; if (climbMash%4===0) strainSound(); return; }
     if (!trapped) return;
     trapTimer = Math.max(0, trapTimer - 0.17);
     strainSound();
@@ -2885,6 +3087,7 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
   var stickId=null, stickR=52;
   var isTouch = ('ontouchstart' in window) || (navigator.maxTouchPoints>0);
   if (isTouch) document.body.classList.add('touch');
+  var actionHint = isTouch ? '<kbd>USE</kbd>' : '<kbd>E</kbd>';
 
   function stickSet(dx,dz){
     var m=Math.sqrt(dx*dx+dz*dz);
@@ -2951,35 +3154,11 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
   }
 
   function updatePlayer(dt){
-    // down the trap door: you go nowhere until you climb or a friend pulls you out
-    if (fallen){
-      var tdp=trapdoors[fallenIdx]||{x:player.x,z:player.z};
-      player.x=tdp.x; player.z=tdp.z;
-      player.moving=false; player.sprinting=false;
-      promptEl.classList.remove('hidden');
-      promptEl.innerHTML = NET.on
-        ? '<kbd>E</kbd> Call for help &mdash; mash any key to climb ('+Math.max(0,26-climbMash)+')'
-        : 'You fell through &mdash; <kbd>mash any key</kbd> to climb out ('+Math.max(0,26-climbMash)+')';
-      if (actPressed && performance.now()>helpCool){
-        helpCool=performance.now()+3500;
-        knockSound(0); netSend('help',{ i:fallenIdx });
-        showToast('You bang on the boards above');
-        if (!NET.on || (isHost() && !NET.isPun)){ huntMode=true; searchTimer=0; lastKnown={x:player.x,z:player.z}; }
-      }
-      if (climbMash>=26){
-        fallen=false; fallenIdx=-1; climbMash=0; fallImmune=performance.now()+2500;
-        promptEl.classList.add('hidden');
-        showToast('You drag yourself out');
-      }
-      actPressed=false;
-      return;
-    }
-
     // pinned by a trap: nothing moves until you thrash your way out
     if (trapped){
       trapTimer -= dt;
       promptEl.classList.remove('hidden');
-      promptEl.innerHTML = 'Caught in a trap &mdash; <kbd>mash any key</kbd> to pull free';
+      promptEl.innerHTML = 'Caught in a trap &mdash; '+(isTouch ? '<kbd>tap rapidly</kbd>' : '<kbd>mash any key</kbd>')+' to pull free';
       stamina = Math.max(0, stamina - dt*4);
       staminaFill.style.width = stamina+'%';
       player.moving=false; player.sprinting=false;
@@ -2991,6 +3170,14 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
       }
       actPressed=false;
       return;
+    }
+
+    if (NET.isPun){
+      var rageBefore=punRage|0;
+      punShiftCd=Math.max(0,punShiftCd-dt);
+      punRage=Math.min(100,punRage+dt*4.2);
+      if (actPressed) usePunShift();
+      if ((punRage|0)!==rageBefore || punShiftCd>0) updateEvidenceHud();
     }
 
     // camera never turns, so screen directions and world axes stay locked together
@@ -3014,7 +3201,7 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
     var near=NET.isPun ? null : nearestHideSpot();
     if (hidden){
       promptEl.classList.remove('hidden');
-      promptEl.innerHTML='<kbd>E</kbd> Step out';
+      promptEl.innerHTML=actionHint+' Step out';
       if (actPressed){
         if (hideSpot){
           player.x = hideSpot.x - hideSpot.nx*0.95;
@@ -3030,28 +3217,18 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
       return;
     } else if (near){
       promptEl.classList.remove('hidden');
-      promptEl.innerHTML = near.kind==='bed' ? '<kbd>E</kbd> Get under the bed' : '<kbd>E</kbd> Hide in the wardrobe';
+      promptEl.innerHTML = near.kind==='bed' ? actionHint+' Get under the bed' : actionHint+' Hide in the wardrobe';
       if (actPressed){
         hidden=true; hideSpot=near;
+        near.uses=(near.uses||0)+1;
         player.x=near.x - near.nx*0.15;
         player.z=near.z - near.nz*0.15;
         player.yaw=Math.atan2(near.nx, near.nz);
-        promptEl.innerHTML='<kbd>E</kbd> Step out';
+        promptEl.innerHTML=actionHint+' Step out';
+        if (near.uses===2) showToast('This hiding place feels remembered.', true);
       }
     } else {
       promptEl.classList.add('hidden');
-    }
-    // hauling a friend out of a trap door takes priority over everything else
-    if (NET.on && !NET.isPun && !fallen && !hidden){
-      for (var rk in NET.peers){
-        var rq=NET.peers[rk];
-        if (rq.fallen && !rq.dead && !rq.out && dist(player.x,player.z,rq.x,rq.z)<1.35){
-          promptEl.classList.remove('hidden');
-          promptEl.innerHTML='<kbd>E</kbd> Pull '+rq.name+' out';
-          if (actPressed){ netSend('rescue',{ to:rk }); showToast('You haul '+rq.name+' up'); }
-          break;
-        }
-      }
     }
     actPressed=false;
 
@@ -3096,38 +3273,12 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
       }
     }
 
-    // trap doors give way
-    if (!NET.isPun && !hidden && performance.now()>fallImmune){
-      for (var tdi=0; tdi<trapdoors.length; tdi++){
-        var tdd=trapdoors[tdi];
-        if (dist(player.x,player.z,tdd.x,tdd.z)<0.62){
-          tdd.open=true; fallen=true; fallenIdx=tdi; climbMash=0;
-          tdFallSound(); netSend('tdfall',{ i:tdi });
-          frame.classList.add('shaking'); setTimeout(function(){ frame.classList.remove('shaking'); }, 400);
-          break;
-        }
-      }
-    }
-    // keys
-    for (var i=0;i<keyItems.length && !NET.isPun;i++){
-      var ki=keyItems[i];
-      if (!ki.taken && dist(player.x,player.z,ki.x,ki.z)<0.85){
-        ki.taken=true; keysHeld++; netSend('key',{i:i});
-        keyChime(); updateKeysHud();
-        if (keysHeld>=keyItems.length){
-          // the last key is the point of no return
-          endgame=true;
-          huntMode=true; lastKnown={x:player.x,z:player.z}; searchTimer=0;
-          graceLeft=0;
-          awakenStinger();
-          setTimeout(function(){ voice(pick('gomad1','gomad2'),{vol:1.0,cool:0}); }, 350);
-          flashEl.classList.remove('fire');
-          void flashEl.offsetWidth;
-          flashEl.classList.add('fire');
-          showToast('He knows. Run for the door.', true);
-        } else {
-          showToast('Key '+keysHeld+' of '+keyItems.length);
-        }
+    // Evidence is recovered by contact, just as the old keys were, but now it
+    // changes both the case and the floorplan.
+    for (var i=0;i<evidenceItems.length && !NET.isPun;i++){
+      var item=evidenceItems[i];
+      if (!item.taken && dist(player.x,player.z,item.x,item.z)<0.85){
+        collectEvidence(i,{ broadcast:true, at:{x:player.x,z:player.z}, finder:NET.on?NET.name:'' });
       }
     }
   }
@@ -3163,6 +3314,35 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
     if (now > nextWhisper && phase==='play' && !hidden){
       nextWhisper = now + 26000 + Math.random()*26000;
       if (graceLeft<=0 && Math.random()<0.75) nameWhisper();
+    }
+  }
+
+  // Pun remembers a hiding place once it has saved you twice. He does not
+  // instantly win: the knock is a clear warning and you have time to leave.
+  function updateRememberedHiding(dt){
+    if (NET.isPun || !hidden || !hideSpot || (hideSpot.uses||0)<2 || graceLeft>0){
+      punMemory.checkSpot=null; punMemory.checkT=0; punMemory.warned=false; return;
+    }
+    var near=dist(creature.x,creature.z,hideSpot.x,hideSpot.z)<4.6;
+    if (!near || (!huntMode && !endgame)){
+      punMemory.checkSpot=null; punMemory.checkT=0; punMemory.warned=false; return;
+    }
+    if (punMemory.checkSpot!==hideSpot){
+      punMemory.checkSpot=hideSpot; punMemory.checkT=0; punMemory.warned=false;
+    }
+    punMemory.checkT+=dt;
+    if (!punMemory.warned){
+      punMemory.warned=true;
+      knockSound(Math.max(-1,Math.min(1,(hideSpot.x-player.x)/5)));
+      showToast(hideSpot.kind==='bed'?'He is looking under the bed…':'He is checking the wardrobe…', true);
+    }
+    if (punMemory.checkT>1.85){
+      var found=hideSpot;
+      player.x=found.x-found.nx*1.05; player.z=found.z-found.nz*1.05;
+      hidden=false; hideSpot=null; found.uses=1;
+      punMemory.checkSpot=null; punMemory.checkT=0; punMemory.warned=false;
+      huntMode=true; searchTimer=0; lastKnown={x:player.x,z:player.z};
+      detectStinger(); showToast('It remembered where you hide.', true);
     }
   }
 
@@ -3231,20 +3411,6 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
     var f=ctx.createBiquadFilter(); f.type='bandpass'; f.frequency.setValueAtTime(300,t); f.frequency.exponentialRampToValueAtTime(2200,t+1.4); f.Q.value=2;
     var ng=ctx.createGain(); ng.gain.setValueAtTime(0.0001,t); ng.gain.linearRampToValueAtTime(0.12,t+1.3); ng.gain.exponentialRampToValueAtTime(0.0001,t+1.5);
     n.connect(f); f.connect(ng); ng.connect(A.master); ng.connect(A.conv); n.start(t); n.stop(t+1.6);
-  }
-  function tdFallSound(){
-    if (!A.ctx) return;
-    var ctx=A.ctx, t=ctx.currentTime;
-    // boards giving way: a crack, a clatter, a heavy landing below
-    for (var i=0;i<5;i++){
-      var n=ctx.createBufferSource(); n.buffer=A.noise; n.playbackRate.value=0.8+Math.random()*0.6;
-      var f=ctx.createBiquadFilter(); f.type='bandpass'; f.frequency.value=700+Math.random()*900; f.Q.value=2;
-      var g=ctx.createGain(); g.gain.setValueAtTime(0.5,t+i*0.05); g.gain.exponentialRampToValueAtTime(0.0001,t+i*0.05+0.12);
-      n.connect(f); f.connect(g); g.connect(A.master); g.connect(A.conv); n.start(t+i*0.05); n.stop(t+i*0.05+0.15);
-    }
-    var o=ctx.createOscillator(); o.type='sine'; o.frequency.setValueAtTime(110,t+0.22); o.frequency.exponentialRampToValueAtTime(34,t+0.55);
-    var og=ctx.createGain(); og.gain.setValueAtTime(0.8,t+0.22); og.gain.exponentialRampToValueAtTime(0.0001,t+0.8);
-    o.connect(og); og.connect(A.master); og.connect(A.conv); o.start(t+0.2); o.stop(t+0.85);
   }
   function knockSound(pan){
     if (!A.ctx) return;
@@ -3379,10 +3545,10 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
   // who it is after: alone, you; together, whichever survivor is nearest and not hidden
   function nearestSurvivor(){
     var best=null, bd=1e9;
-    function consider(x,z,hid,dead){ if (dead) return; var dd=dist(x,z,creature.x,creature.z); if (hid) dd+=1e6; if (dd<bd){ bd=dd; best={x:x,z:z,hidden:!!hid}; } }
-    if (!NET.isPun && phase!=='dead') consider(player.x,player.z,hidden,false);
-    if (NET.on) for (var id in NET.peers){ var q=NET.peers[id]; if (q.role!=='pun') consider(q.x,q.z,q.hidden,q.dead||q.out); }
-    return best || {x:player.x,z:player.z,hidden:true};
+    function consider(x,z,hid,dead,sprinting,local){ if (dead) return; var dd=dist(x,z,creature.x,creature.z); if (hid) dd+=1e6; if (dd<bd){ bd=dd; best={x:x,z:z,hidden:!!hid,sprinting:!!sprinting,local:!!local}; } }
+    if (!NET.isPun && phase!=='dead') consider(player.x,player.z,hidden,false,player.sprinting,true);
+    if (NET.on) for (var id in NET.peers){ var q=NET.peers[id]; if (q.role!=='pun') consider(q.x,q.z,q.hidden,q.dead||q.out,q.sprinting,false); }
+    return best || {x:player.x,z:player.z,hidden:true,sprinting:false,local:true};
   }
   var punSense={ senses:false, lastSense:0 };
   function updateCreature(dt, now){
@@ -3393,7 +3559,7 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
       creature.animT += dt*(player.moving?6.5:0.8);
       creature.jx=creature.jz=0;
       var T=nearestSurvivor(), td=dist(T.x,T.z,creature.x,creature.z);
-      var sees = !T.hidden && td<D.aware && graceLeft<=0;
+      var sees = !T.hidden && td<D.aware*(T.sprinting?1.45:1) && graceLeft<=0;
       if (sees && !punSense.senses){ detectStinger(); var k=pick('getover','cheeky1','cheeky2'); voice(k,{vol:1.0,minGap:0}); netSend('voice',{k:k}); }
       if (sees && td<2.8 && Math.random()<dt*0.7){ var k2=pick('tosser','cheeky1','cheeky2','getover'); if (voice(k2,{vol:1.0,cool:5000})) netSend('voice',{k:k2}); }
       if (sees) punSense.lastSense=now;
@@ -3439,10 +3605,16 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
     }
 
     // hiding blinds it completely — that is the point of the wardrobes
-    var reach = endgame ? 1e9 : D.aware;
+    // Footsteps carry: sprinting makes Pun aware from roughly one extra room
+    // away. The detection sting remains the warning before the chase starts.
+    var reach = endgame ? 1e9 : D.aware*(T.sprinting?1.55:1);
     var senses = !hiddenT && d < reach;
     if (senses){
-      if (!huntMode){ detectStinger(); setTimeout(function(){ voice(pick('getover','cheeky1','cheeky2'),{vol:1.0,minGap:0}); }, 200); }
+      if (!huntMode){
+        detectStinger();
+        if (T.sprinting && d>D.aware && T.local) showToast('He heard you running.', true);
+        setTimeout(function(){ voice(pick('getover','cheeky1','cheeky2'),{vol:1.0,minGap:0}); }, 200);
+      }
       huntMode=true; searchTimer=0;
       lastKnown={ x:T.x, z:T.z };
     } else if (huntMode){
@@ -3632,15 +3804,15 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
     drawDoorPanel(now);
     drawHideMarkers(now);
     drawFires(now);
-    drawKeys(now);
+    drawAnchors(now);
+    drawEvidence(now);
     drawTraps(now);
-    drawTrapdoors(now);
     drawGirl(now);
     drawScares(now);
     if (!NET.isPun && phase!=='dead') drawShadow(player.x,player.z,0.75);
     drawPeers(now);
     drawShadow(creature.x,creature.z,0.85);
-    if (fallen){ drawFallen(player, null); } else if ((!hidden || phase==='scare') && !NET.isPun && phase!=='dead') drawPlayer(player);
+    if ((!hidden || phase==='scare') && !NET.isPun && phase!=='dead') drawPlayer(player);
     drawCreature(d);
     drawMotes(now);
 
@@ -3655,25 +3827,6 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
     }
   }
 
-  function drawTrapdoors(now){
-    var ROT=[0.16,0.11,0.07], ROT2=[0.20,0.14,0.09], PIT=[0.008,0.006,0.008], RIM=[0.10,0.07,0.05];
-    for (var i=0;i<trapdoors.length;i++){
-      var td=trapdoors[i];
-      if (Math.abs(td.x-player.x)>17 || Math.abs(td.z-player.z)>17) continue;
-      if (td.open){
-        drawCube(trsModel(td.x,0.015,td.z,0, 0.70,0.012,0.70), PIT, true);
-        drawCube(trsModel(td.x-0.72,0.05,td.z,0, 0.06,0.05,0.78), RIM, false);
-        drawCube(trsModel(td.x+0.72,0.05,td.z,0, 0.06,0.05,0.78), RIM, false);
-        drawCube(trsModel(td.x,0.05,td.z-0.72,0, 0.78,0.05,0.06), RIM, false);
-        drawCube(trsModel(td.x,0.05,td.z+0.72,0, 0.78,0.05,0.06), RIM, false);
-        // splintered board hanging into the dark
-        drawCube(trsModel(td.x+0.3,0.0,td.z+0.2,0.5, 0.09,0.02,0.5), ROT2, false);
-      } else {
-        // it reads as ordinary floor unless you look: boards a shade darker, sagging
-        for (var b2=0;b2<4;b2++) drawCube(trsModel(td.x-0.48+b2*0.32, 0.012, td.z, 0, 0.15,0.012,0.68), b2%2?ROT:ROT2, false);
-      }
-    }
-  }
   function drawTraps(now){
     for (var i=0;i<traps.length;i++){
       var tp=traps[i];
@@ -3701,16 +3854,6 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
     }
   }
 
-  // a body half-through the floor: head and grasping hands above the boards
-  function drawFallen(pl, tint){
-    var t=performance.now()/1000;
-    var bob=Math.sin(t*3+pl.x)*0.03;
-    drawCube(trsModel(pl.x,0.30+bob,pl.z,pl.yaw,0.30,0.30,0.29), C_SKIN, false);
-    drawCube(trsModel(pl.x,0.46+bob,pl.z,pl.yaw,0.32,0.10,0.31), C_HAIR, false);
-    var hl=rotY(-0.42,0,pl.yaw), hr=rotY(0.42,0.1,pl.yaw);
-    drawCube(trsModel(pl.x+hl[0],0.10+Math.abs(Math.sin(t*4))*0.08,pl.z+hl[1],pl.yaw,0.12,0.12,0.12), C_SKIN, false);
-    drawCube(trsModel(pl.x+hr[0],0.10+Math.abs(Math.cos(t*4))*0.08,pl.z+hr[1],pl.yaw,0.12,0.12,0.12), C_SKIN, false);
-  }
   function drawGirl(now){
     if (!girl.active || girl.fade<=0.02) return;
     var f=girl.fade;
@@ -3754,7 +3897,7 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
 
   function drawDoorPanel(now){
     var ed=doorTransform();
-    var unlocked = keysHeld>=keyItems.length;
+    var unlocked = evidenceHeld>=evidenceItems.length;
     var base = unlocked?C_DOOR_OPEN:C_DOOR_LOCKED;
     var pulse = unlocked ? (0.95+Math.sin(now/240)*0.35) : (0.42+Math.sin(now/700)*0.10);
     drawCube(trsModel(ed.x,0.92,ed.z, ed.yaw, 0.16,1.84,1.5),
@@ -3783,15 +3926,43 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
     }
   }
 
-  function drawKeys(now){
-    for (var i=0;i<keyItems.length;i++){
-      var k=keyItems[i];
-      if (k.taken) continue;
-      var bob=Math.sin(now/420 + i)*0.09;
-      var spin=now/600 + i;
-      drawCube(trsModel(k.x, 0.72+bob, k.z, spin, 0.10,0.20,0.10), C_KEY, true);
-      drawCube(trsModel(k.x, 0.62+bob, k.z, spin, 0.22,0.05,0.07), C_KEY, true);
-      drawCube(trsModel(k.x, 0.02, k.z, 0, 0.55,0.008,0.55), [0.32,0.24,0.09], true);
+  function drawEvidence(now){
+    for (var i=0;i<evidenceItems.length;i++){
+      var item=evidenceItems[i];
+      if (item.taken) continue;
+      var bob=Math.sin(now/420+i)*0.08, spin=now/1050+i*1.7, y=0.66+bob;
+      var clue=EVIDENCE_CATALOG[item.type]||EVIDENCE_CATALOG[0];
+      if (clue.id==='photo'){
+        drawCube(trsModel(item.x,y,item.z,spin,0.34,0.025,0.24), [0.86,0.78,0.62], true);
+        drawCube(trsModel(item.x,y+0.03,item.z,spin,0.23,0.012,0.13), [0.12,0.11,0.12], true);
+      } else if (clue.id==='tape'){
+        drawCube(trsModel(item.x,y,item.z,spin,0.32,0.11,0.22), [0.09,0.085,0.095], true);
+        var reel=rotY(0.13,0,spin), reel2=rotY(-0.13,0,spin);
+        drawCube(trsModel(item.x+reel[0],y+0.12,item.z+reel[1],spin,0.07,0.025,0.07), [0.70,0.64,0.51], true);
+        drawCube(trsModel(item.x+reel2[0],y+0.12,item.z+reel2[1],spin,0.07,0.025,0.07), [0.70,0.64,0.51], true);
+      } else if (clue.id==='plan'){
+        drawCube(trsModel(item.x,y,item.z,spin,0.40,0.025,0.29), [0.82,0.75,0.61], true);
+        drawCube(trsModel(item.x,y+0.03,item.z,spin,0.29,0.012,0.025), [0.28,0.22,0.18], true);
+        drawCube(trsModel(item.x,y+0.032,item.z,spin+Math.PI/2,0.20,0.012,0.022), [0.48,0.08,0.10], true);
+      } else {
+        drawCube(trsModel(item.x,y,item.z,spin,0.10,0.035,0.38), [0.25,0.16,0.10], true);
+        drawCube(trsModel(item.x,y+0.06,item.z,spin,0.17,0.07,0.17), [0.72,0.61,0.39], true);
+        drawCube(trsModel(item.x,y+0.135,item.z,spin,0.10,0.018,0.10), [0.12,0.10,0.10], true);
+      }
+      drawCube(trsModel(item.x,0.02,item.z,0,0.62,0.008,0.62), [0.32,0.24,0.09], true);
+    }
+  }
+
+  function drawAnchors(now){
+    for (var i=0;i<evidenceItems.length;i++){
+      var item=evidenceItems[i]; if (!item.taken || !anchoredRooms[item.room]) continue;
+      if (Math.abs(item.x-player.x)>17 || Math.abs(item.z-player.z)>17) continue;
+      var pulse=0.72+Math.sin(now/360+i)*0.12, chalk=[0.64*pulse,0.54*pulse,0.38*pulse];
+      drawCube(trsModel(item.x,0.025,item.z-0.52,0,0.50,0.012,0.025),chalk,true);
+      drawCube(trsModel(item.x,0.025,item.z+0.52,0,0.50,0.012,0.025),chalk,true);
+      drawCube(trsModel(item.x-0.52,0.025,item.z,0,0.025,0.012,0.50),chalk,true);
+      drawCube(trsModel(item.x+0.52,0.025,item.z,0,0.025,0.012,0.50),chalk,true);
+      drawCube(trsModel(item.x,0.08,item.z,0,0.06,0.08,0.06),[0.72*pulse,0.08,0.10],true);
     }
   }
 
@@ -4015,6 +4186,7 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
       updateGirl(dt,t);
       updateScares(dt,t);
       d=updateCreature(dt,t);
+      updateRememberedHiding(dt);
 
       var el=(t-startTime)/1000, mm=(el/60)|0, ss=(el%60)|0;
       timerEl.textContent=(mm<10?'0':'')+mm+':'+(ss<10?'0':'')+ss;
@@ -4033,8 +4205,8 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
         dreadLabel.className = huntMode ? 'status dread' : 'status calm';
         dreadLabel.textContent = graceLeft>0 ? 'HOLD ON · '+Math.ceil(graceLeft)+'s' : (huntMode ? 'YOU SEE THEM' : 'FIND THEM');
       } else if (hidden){
-        dreadLabel.className='status calm';
-        dreadLabel.textContent = endgame ? 'HIDDEN — HE IS STILL LOOKING' : 'HIDDEN';
+        dreadLabel.className=punMemory.checkT>0?'status dread':'status calm';
+        dreadLabel.textContent = punMemory.checkT>0 ? 'HE IS CHECKING — LEAVE NOW' : (endgame ? 'HIDDEN — HE IS STILL LOOKING' : 'HIDDEN');
       } else if (graceLeft>0){
         dreadLabel.className='status calm';
         dreadLabel.textContent='THE HOUSE IS STILL · '+Math.ceil(graceLeft)+'s';
@@ -4067,10 +4239,10 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
 
       // reaching the door
       if (pastDoor() && !NET.isPun){
-        if (keysHeld>=keyItems.length){
+        if (evidenceHeld>=evidenceItems.length){
           netSend('out',{}); NET.out=true;
           phase='over'; running=false;
-          winSub.textContent='You escaped in '+timerEl.textContent+' on '+diffName+'.';
+          winSub.textContent='You escaped with Pun\'s case file in '+timerEl.textContent+' on '+diffName+'.';
           winOverlay.classList.remove('hidden');
           frame.classList.remove('shaking');
           dreadWash.style.opacity=0;
@@ -4081,7 +4253,7 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
           if (exitDir==='W') player.x=exitCell.c*CELL+0.6;
           if (exitDir==='S') player.z=(exitCell.r+1)*CELL-0.6;
           if (exitDir==='N') player.z=exitCell.r*CELL+0.6;
-          if (toastTimer<=0) showToast('Locked — '+(keyItems.length-keysHeld)+' key'+(keyItems.length-keysHeld>1?'s':'')+' still missing', true);
+          if (toastTimer<=0) showToast('The door rejects you — '+(evidenceItems.length-evidenceHeld)+' piece'+(evidenceItems.length-evidenceHeld>1?'s':'')+' of evidence still missing', true);
         }
       }
 
@@ -4110,9 +4282,9 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
       } else if (scareT>1.05){
         phase='over'; running=false;
         frame.classList.remove('scaring');
-        loseSub.textContent = keysHeld>0
-          ? 'You had '+keysHeld+' of '+keyItems.length+' keys.'
-          : 'You never found a single key.';
+        loseSub.textContent = evidenceHeld>0
+          ? 'You recovered '+evidenceHeld+' of '+evidenceItems.length+' pieces of evidence.'
+          : 'You vanished without adding a thing to the case file.';
         loseOverlay.classList.remove('hidden');
       }
     }
@@ -4182,7 +4354,6 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
     NET.me=uid(); NET.code=code; NET.role=asHost?'host':'peer'; NET.peers={}; NET.on=true; NET.hostSeen=false;
     NET.sb=NET.sb||window.supabase.createClient(SB_URL,SB_KEY);
     lbJoin.classList.add('hidden'); lbRoom.classList.remove('hidden'); startBtn.style.display='none';
-    try{ history.replaceState(null,'','#r='+code); }catch(e){}
     lbRoomcode.textContent=code; lbStatus.textContent='connecting…';
     lbHostbox.classList.toggle('hidden', !asHost);
     var ch=NET.sb.channel('house-'+code, { config:{ presence:{ key:NET.me }, broadcast:{ self:false } } });
@@ -4216,23 +4387,24 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
     });
     ch.on('broadcast',{event:'start'},function(m){ if (isHost()) return; if (m.payload.late && NET.started) return; netStart(m.payload); });
     ch.on('broadcast',{event:'state'},function(m){ var q=NET.peers[m.payload.from]; if (!q) return; var pl=m.payload;
-      q.tx=pl.x; q.tz=pl.z; q.tyaw=pl.yaw; q.moving=pl.m; q.sprinting=pl.s; q.hidden=pl.h; q.role=pl.r; q.fallen=!!pl.f;
+      q.tx=pl.x; q.tz=pl.z; q.tyaw=pl.yaw; q.moving=pl.m; q.sprinting=pl.s; q.hidden=pl.h; q.role=pl.r;
       if (!q.seenAt || Math.abs(q.x-q.tx)>6 || Math.abs(q.z-q.tz)>6){ q.x=q.tx; q.z=q.tz; q.yaw=q.tyaw; }
       q.seenAt=performance.now();
       if (pl.r==='pun') NET.remoteCreature={ x:pl.x, z:pl.z, yaw:pl.yaw, animT:pl.a, hunt:pl.hu }; });
     ch.on('broadcast',{event:'pun'},function(m){ if (!NET.isPun && !isHost()) NET.remoteCreature=m.payload; else if (!NET.isPun && isHost() && NET.mode==='vs') NET.remoteCreature=m.payload; });
-    ch.on('broadcast',{event:'key'},function(m){ var k=keyItems[m.payload.i]; if (k && !k.taken){ k.taken=true; keysHeld++; keyChime(); updateKeysHud(); var who=NET.peers[m.payload.from]; showToast((who?who.name:'someone')+' found key '+keysHeld+' of '+keyItems.length);
-      if (keysHeld>=keyItems.length){ endgame=true; graceLeft=0; awakenStinger(); setTimeout(function(){ voice(pick('gomad1','gomad2'),{vol:1.0,cool:0}); },350); showToast('He knows. Run for the door.', true); } } });
+    ch.on('broadcast',{event:'evidence'},function(m){
+      var who=NET.peers[m.payload.from];
+      collectEvidence(m.payload.i,{ shift:m.payload.shift||null, at:m.payload.at, finder:who?who.name:'someone' });
+    });
+    ch.on('broadcast',{event:'house-shift'},function(m){
+      if (applyHouseShift(m.payload.shift)) showToast('Pun rewrote an unseen corridor.', true);
+    });
     ch.on('broadcast',{event:'rtc'},function(m){ voiceSignal(m.payload); });
     ch.on('broadcast',{event:'round'},function(m){ netRoundEnd(m.payload); });
     ch.on('broadcast',{event:'lobby'},function(m){ if (!isHost()) backToLobby(); });
     ch.on('broadcast',{event:'voice'},function(m){ voice(m.payload.k,{vol:1.0,minGap:0,cool:0,local:true}); });
-    ch.on('broadcast',{event:'dead'},function(m){ var q=NET.peers[m.payload.from]; if (q){ q.dead=true; showToast('He got '+q.name+' — '+Math.max(0,survivorsLeft())+' still inside', true); } });
-    ch.on('broadcast',{event:'out'},function(m){ var q=NET.peers[m.payload.from]; if (q){ q.out=true; showToast(q.name+' made it out — '+Math.max(0,survivorsLeft())+' still inside'); } });
-    ch.on('broadcast',{event:'tdfall'},function(m){ var q=NET.peers[m.payload.from]; if (typeof m.payload.i==='number' && trapdoors[m.payload.i]) trapdoors[m.payload.i].open=true; if (q) showToast(q.name+' fell through the floor', true); });
-    ch.on('broadcast',{event:'help'},function(m){ var q=NET.peers[m.payload.from]; if (q){ q.helpUntil=performance.now()+16000; knockSound(Math.max(-1,Math.min(1,(q.x-player.x)/6))); if (!NET.isPun) showToast(q.name+' is calling for help'); else showToast('Banging, from under the boards…', true); }
-      if (isHost() && !NET.isPun && NET.mode==='coop' && q){ huntMode=true; searchTimer=0; lastKnown={x:q.x,z:q.z}; } });
-    ch.on('broadcast',{event:'rescue'},function(m){ if (m.payload.to===NET.me && fallen){ fallen=false; fallenIdx=-1; climbMash=0; fallImmune=performance.now()+2500; promptEl.classList.add('hidden'); showToast('Pulled out — go'); } });
+    ch.on('broadcast',{event:'dead'},function(m){ var q=NET.peers[m.payload.from]; if (q){ q.dead=true; showToast('He got '+q.name, true); } });
+    ch.on('broadcast',{event:'out'},function(m){ var q=NET.peers[m.payload.from]; if (q){ q.out=true; showToast(q.name+' made it out'); } });
     ch.on('broadcast',{event:'trap'},function(m){ var q=NET.peers[m.payload.from]; if (q) showToast((q.name)+' is in a trap', true); if (typeof m.payload.i==='number' && traps[m.payload.i]) traps[m.payload.i].sprung=true; if (isHost() && !NET.isPun){ huntMode=true; searchTimer=0; lastKnown={x:m.payload.x,z:m.payload.z}; } });
     ch.subscribe(function(status){
       if (status==='SUBSCRIBED'){ lbStatus.textContent=asHost?'you are the host':'in'; ch.track({ name:NET.name, host:asHost }); }
@@ -4244,7 +4416,6 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
     voiceOff();
     NET.on=false; NET.role='solo'; NET.chan=null; NET.peers={}; NET.isPun=false; NET.started=false; NET.remoteCreature=null;
     lbJoin.classList.remove('hidden'); lbRoom.classList.add('hidden'); netList.textContent=''; startBtn.style.display='';
-    try{ history.replaceState(null,'',location.pathname); }catch(e){}
   }
   var lbReady=$('lb-ready'), lbStart=$('lb-start');
   NET.ready=false;
@@ -4272,22 +4443,6 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
   }
   $('lb-create').addEventListener('click', function(){ joinRoom(roomCode(), true); voiceStart(); });
   $('lb-join').addEventListener('click', function(){ var c=(lbCode.value||'').toUpperCase().replace(/[^A-Z0-9]/g,''); if (c.length===4){ joinRoom(c,false); voiceStart(); } else lbCode.focus(); });
-  $('lb-invite').addEventListener('click', function(){
-    var url=location.origin+location.pathname+'#r='+NET.code;
-    var msg='Come into the house. '+url;
-    if (navigator.share){ navigator.share({ title:'Escape the House', text:msg, url:url }).catch(function(){}); }
-    else if (navigator.clipboard){ navigator.clipboard.writeText(url).then(function(){ lobbyPing('link copied — send it to them'); }).catch(function(){}); }
-  });
-  // arriving through an invite link: the code is filled in, and if we know your
-  // name you walk straight into the room
-  (function(){
-    var m2=(location.hash||'').match(/r=([A-Z0-9]{4})/i);
-    if (!m2) return;
-    var code=m2[1].toUpperCase();
-    lbCode.value=code;
-    if ((lbName.value||'').trim()){ joinRoom(code,false); document.addEventListener('pointerdown', function once(){ document.removeEventListener('pointerdown', once); voiceStart(); }); }
-    else { lbName.focus(); lobbyPing('type a name, then hit join'); }
-  })();
   $('lb-leave').addEventListener('click', leaveRoom);
   $('lb-start').addEventListener('click', function(){
     var mode=document.querySelector('input[name=lbmode]:checked').value;
@@ -4296,19 +4451,21 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
     netSend('start', msg); netStart(msg);
   });
   function worldState(){
-    var kk=[], tt=[];
-    for (var i=0;i<keyItems.length;i++) if (keyItems[i].taken) kk.push(i);
+    var vv=[], tt=[];
+    for (var i=0;i<evidenceItems.length;i++) if (evidenceItems[i].taken) vv.push(i);
     for (var j=0;j<traps.length;j++) if (traps[j].sprung) tt.push(j);
-    var dd2=[]; for (var q5=0;q5<trapdoors.length;q5++) if (trapdoors[q5].open) dd2.push(q5);
-    return { k:kk, t:tt, e:endgame, d:dd2 };
+    return { v:vv, t:tt, e:endgame, s:houseShifts.slice() };
   }
   function applyWorld(w){
     if (!w) return;
-    (w.k||[]).forEach(function(i){ if (keyItems[i] && !keyItems[i].taken){ keyItems[i].taken=true; keysHeld++; } });
+    (w.v||w.k||[]).forEach(function(i){
+      var item=evidenceItems[i];
+      if (item && !item.taken){ item.taken=true; evidenceHeld++; if (item.room>=0) anchoredRooms[item.room]=true; }
+    });
+    (w.s||[]).forEach(function(spec){ applyHouseShift(spec,true,true); });
     (w.t||[]).forEach(function(j){ if (traps[j]) traps[j].sprung=true; });
-    (w.d||[]).forEach(function(j){ if (trapdoors[j]) trapdoors[j].open=true; });
     if (w.e){ endgame=true; graceLeft=0; }
-    updateKeysHud();
+    updateEvidenceHud();
   }
   function netStart(m){
     NET.seed=m.seed; NET.mode=m.mode; NET.punId=m.pun; NET.isPun=(m.mode==='vs' && m.pun===NET.me);
@@ -4347,7 +4504,7 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
       q.animT += (q.moving?(q.sprinting?12.5:8.0):0)*0.016; }
     if (now-NET.lastSend<66) return;
     NET.lastSend=now;
-    var pl={ x:+player.x.toFixed(2), z:+player.z.toFixed(2), yaw:+player.yaw.toFixed(2), m:player.moving, s:player.sprinting, h:hidden, r:myRole(), f:fallen };
+    var pl={ x:+player.x.toFixed(2), z:+player.z.toFixed(2), yaw:+player.yaw.toFixed(2), m:player.moving, s:player.sprinting, h:hidden, r:myRole() };
     if (VOICE.stream) VOICE.stream.getAudioTracks().forEach(function(t){ t.enabled=!voiceMuted && !NET.isPun; });
     if (NET.isPun){ pl.a=+creature.animT.toFixed(2); pl.hu=huntMode; }
     netSend('state', pl);
@@ -4355,7 +4512,6 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
     // the roster on the HUD
     var h='';
     for (var k2 in NET.peers){ var q2=NET.peers[k2]; h+='<div class="'+(q2.out?'out':(q2.dead?'dead':''))+'">'+q2.name+(q2.role==='pun'?' — PUN':'')+'</div>'; }
-    if (NET.voiceLine) h+='<div style="opacity:.6;margin-top:4px">'+NET.voiceLine+'</div>';
     netList.innerHTML=h;
   }
   function survivorsLeft(){
@@ -4380,20 +4536,14 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
     running=false; phase='over';
     frame.classList.remove('shaking','scaring'); dreadWash.style.opacity=0; flashEl.classList.remove('fire'); promptEl.classList.add('hidden');
     var outs=m.outs||0, who=(m.names&&m.names.length)?m.names.join(', '):'';
-    // one summary everyone sees: who got out, who he got, who was the monster
-    var lines=[];
-    function outcomeOf(name, isOut, isPun){ return '<span style="opacity:.75">'+name+'</span> — '+(isPun?'was Pun':(isOut?'<b style="color:#8fbf8a">escaped</b>':'<b style="color:#c25a5a">caught</b>')); }
-    lines.push(outcomeOf(NET.name+' (you)', NET.out, NET.isPun));
-    for (var pk in NET.peers){ var pq=NET.peers[pk]; lines.push(outcomeOf(pq.name, pq.out, pq.role==='pun')); }
-    var summary='<span style="display:block;margin-top:10px;font-size:.85em;line-height:1.7">'+lines.join('<br>')+(isHost()?'':'<br><i style="opacity:.6">the host brings everyone back to the lobby</i>')+'</span>';
     loseOverlay.classList.add('hidden'); winOverlay.classList.add('hidden');
     if (NET.isPun){
-      if (outs===0){ winOverlay.querySelector('.end-title').textContent='YOU GOT THEM ALL'; winSub.innerHTML='Nobody got out. Pun go mad.'+summary; winOverlay.classList.remove('hidden'); }
-      else { loseOverlay.querySelector('.end-title').textContent='THEY GOT OUT'; loseSub.innerHTML=who+' got past you.'+summary; loseOverlay.classList.remove('hidden'); }
+      if (outs===0){ winOverlay.querySelector('.end-title').textContent='YOU GOT THEM ALL'; winSub.textContent='Nobody got out. Pun go mad.'; winOverlay.classList.remove('hidden'); }
+      else { loseOverlay.querySelector('.end-title').textContent='THEY GOT OUT'; loseSub.textContent=who+' got past you.'; loseOverlay.classList.remove('hidden'); }
     } else if (NET.out){
-      winOverlay.querySelector('.end-title').textContent='You Made It Out'; winSub.innerHTML = (outs>1 ? ('Out with '+(outs-1)+' of the others.') : 'The only one who found the door.')+summary; winOverlay.classList.remove('hidden');
+      winOverlay.querySelector('.end-title').textContent='You Made It Out'; winSub.textContent = outs>1 ? ('Out with '+(outs-1)+' of the others.') : 'The only one who found the door.'; winOverlay.classList.remove('hidden');
     } else {
-      loseOverlay.querySelector('.end-title').textContent='HE HAS YOU'; loseSub.innerHTML = (outs>0 ? (who+' made it out. You did not.') : 'None of you found the door.')+summary; loseOverlay.classList.remove('hidden');
+      loseOverlay.querySelector('.end-title').textContent='HE HAS YOU'; loseSub.textContent = outs>0 ? (who+' made it out. You did not.') : 'None of you found the door.'; loseOverlay.classList.remove('hidden');
     }
   }
   setInterval(function(){ try{ netRoundCheck(); }catch(e){} }, 600);
@@ -4425,7 +4575,6 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
     for (var k in NET.peers){
       var q=NET.peers[k]; i++;
       if (q.role==='pun' || q.dead || q.out || q.hidden || !q.seenAt) continue;
-      if (q.fallen){ drawFallen(q, PEER_TINTS[i%PEER_TINTS.length]); continue; }
       computePose(q);
       drawShadow(q.x,q.z,0.75);
       drawPlayer(q, PEER_TINTS[i%PEER_TINTS.length]);
@@ -4452,7 +4601,7 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
   // Microphones go peer to peer over WebRTC; the room channel only carries the
   // handshake. Each friend's voice is placed in the house: you hear them by how
   // close they are, and from which side.
-  var VOICE={ on:false, stream:null, pcs:{}, nodes:{}, relay:{}, state:{}, denied:false };
+  var VOICE={ on:false, stream:null, pcs:{}, nodes:{} };
   // STUN finds a direct path; the relay is the fallback for phone networks that
   // won't allow one (the free Open Relay tier — swap for your own TURN if it fills up)
   var RTC_CFG={ iceServers:[
@@ -4473,13 +4622,14 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
   muteBtn.addEventListener('click', function(){ if (!VOICE.on) return; setMuted(!voiceMuted); });
   muteBtn.addEventListener('pointerdown', function(e){ e.stopPropagation(); });
   function voiceStart(){
+    if (window.MISSING_PUN_NATIVE_APP || window.ESCAPE_NATIVE_APP){ lbMicNote.textContent='voice chat is unavailable in this app version'; return; }
     if (VOICE.on) return;
     if (!navigator.mediaDevices || !window.RTCPeerConnection){ lbMicNote.textContent='this browser cannot do voice'; return; }
     navigator.mediaDevices.getUserMedia({ audio:{ echoCancellation:true, noiseSuppression:true, autoGainControl:true }, video:false }).then(function(st){
       VOICE.stream=st; VOICE.on=true; setMuted(false); voiceStatus();
       for (var k in VOICE.pcs) voiceDrop(k);
       for (var k2 in NET.peers) voiceConnect(k2);
-    }).catch(function(){ VOICE.denied=true; voiceStatus(); });
+    }).catch(function(){ lbMicNote.textContent='microphone permission was refused — tap the mic button to try again'; });
   }
   lbMic.addEventListener('click', function(){ if (!VOICE.on) voiceStart(); else setMuted(!voiceMuted); });
   function voiceOff(){
@@ -4487,52 +4637,32 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
     if (VOICE.stream){ VOICE.stream.getTracks().forEach(function(t){ t.stop(); }); VOICE.stream=null; }
     for (var k in VOICE.pcs) voiceDrop(k);
   }
-  function voiceDrop(k, keepRelay){
-    if (!keepRelay) delete VOICE.relay[k];
-    delete VOICE.state[k];
-    if (VOICE.pcs[k]){ try{ VOICE.pcs[k].onconnectionstatechange=null; VOICE.pcs[k].close(); }catch(e){} delete VOICE.pcs[k]; }
+  function voiceDrop(k){
+    if (VOICE.pcs[k]){ try{ VOICE.pcs[k].close(); }catch(e){} delete VOICE.pcs[k]; }
     if (VOICE.nodes[k]){ try{ VOICE.nodes[k].el.srcObject=null; VOICE.nodes[k].el.remove(); }catch(e){} delete VOICE.nodes[k]; }
   }
   function voicePC(k){
     if (VOICE.pcs[k]) return VOICE.pcs[k];
-    var cfg={ iceServers:RTC_CFG.iceServers };
-    if (VOICE.relay[k]) cfg.iceTransportPolicy='relay';   // the direct path failed once; go through the relay
-    var pc=new RTCPeerConnection(cfg); VOICE.pcs[k]=pc; VOICE.state[k]='connecting';
+    var pc=new RTCPeerConnection(RTC_CFG); VOICE.pcs[k]=pc;
     if (VOICE.stream) VOICE.stream.getTracks().forEach(function(t){ pc.addTrack(t, VOICE.stream); });
     else { try{ pc.addTransceiver('audio',{direction:'recvonly'}); }catch(e){} }
     pc.onicecandidate=function(e){ if (e.candidate) netSend('rtc',{ to:k, kind:'ice', c:JSON.parse(JSON.stringify(e.candidate)) }); };
     pc.ontrack=function(e){ voiceAttach(k, e.streams[0]); };
-    pc.onconnectionstatechange=function(){
-      var st=pc.connectionState;
-      if (st==='connected') VOICE.state[k] = VOICE.nodes[k] ? 'linked' : 'linked (silent)';
-      voiceStatus();
-      if (st==='failed' || st==='closed'){
-        VOICE.state[k]='failed';
-        var wasRelay=!!VOICE.relay[k];
-        voiceDrop(k);
-        // first failure: try again forced through the relay; after that keep retrying slowly
-        if (!wasRelay) VOICE.relay[k]=true;
-        if (NET.peers[k]) setTimeout(function(){ if (NET.peers[k]) voiceConnect(k, true); }, wasRelay?6000:800);
-      }
-    };
-    pc.oniceconnectionstatechange=function(){
-      if (pc.iceConnectionState==='disconnected') VOICE.state[k]='reconnecting…';
-      voiceStatus();
-    };
-    // a connection stuck on 'checking' for 9s counts as failed — some networks just eat it
-    setTimeout(function(){ if (VOICE.pcs[k]===pc && pc.connectionState!=='connected'){ try{ pc.close(); }catch(e){} if (pc.onconnectionstatechange) pc.onconnectionstatechange(); } }, 9000);
+    pc.onconnectionstatechange=function(){ voiceStatus(); if (pc.connectionState==='failed' || pc.connectionState==='closed'){ voiceDrop(k); if (VOICE.on) setTimeout(function(){ if (NET.peers[k] && VOICE.on) voiceConnect(k); }, 2500); } };
     return pc;
   }
-  function voiceConnect(k, keepRelay){
-    if (!(NET.me<k)){ netSend('rtc',{ to:k, kind:'call', relay:!!VOICE.relay[k] }); return; }
-    voiceDrop(k, keepRelay);
+  function voiceConnect(k){
+    // the lower id makes the offer, so both sides never offer at once; if the
+    // other side has the lower id, ask them to
+    if (!(NET.me<k)){ netSend('rtc',{ to:k, kind:'call' }); return; }
+    voiceDrop(k);
     var pc=voicePC(k);
     pc.createOffer().then(function(o){ return pc.setLocalDescription(o); }).then(function(){ netSend('rtc',{ to:k, kind:'offer', sdp:{type:pc.localDescription.type, sdp:pc.localDescription.sdp} }); }).catch(function(){});
   }
   function voiceSignal(m){
     if (m.to!==NET.me) return;
     var k=m.from;
-    if (m.kind==='call'){ if (m.relay) VOICE.relay[k]=true; if (NET.me<k) voiceConnect(k, true); }
+    if (m.kind==='call'){ if (NET.me<k) voiceConnect(k); }
     else if (m.kind==='offer'){
       voiceDrop(k);
       var pc=voicePC(k);
@@ -4553,22 +4683,14 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
     el.style.display='none'; document.body.appendChild(el);
     var tryPlay=function(){ el.play().catch(function(){ setTimeout(tryPlay, 800); }); }; tryPlay();
     VOICE.nodes[k]={ el:el, stream:stream, vol:1 };
-    if (VOICE.state[k] && VOICE.state[k].indexOf('linked')===0) VOICE.state[k]='linked';
     voiceStatus();
   }
   function voiceStatus(){
-    // one line per friend, in the lobby note and on the in-game roster
-    var parts=[];
-    for (var k in NET.peers){
-      var st = VOICE.state[k] || (VOICE.on ? 'connecting' : '');
-      if (VOICE.relay[k] && st==='linked') st='linked via relay';
-      if (st) parts.push(NET.peers[k].name+': '+st);
-    }
-    if (!VOICE.on) lbMicNote.textContent = VOICE.denied ? 'microphone was refused — tap the mic button to try again' : 'voice starts when you join · co-op hears everyone, playing Pun whispers when close';
-    else lbMicNote.textContent = parts.length ? ('mic on · '+parts.join(' · ')) : 'mic on — waiting for others';
-    NET.voiceLine = VOICE.on ? parts.join('<br>') : '';
+    if (!VOICE.on) return;
+    var n=0, c=0; for (var k in VOICE.pcs){ n++; if (VOICE.pcs[k].connectionState==='connected') c++; }
+    var heard=Object.keys(VOICE.nodes).length;
+    lbMicNote.textContent = n ? ('mic on — linked to '+c+' of '+n+(heard<c?' (waiting for their sound)':'')) : 'mic on — waiting for others';
   }
-  setInterval(voiceStatus, 2000);
   function voiceUpdate(){
     for (var k in VOICE.nodes){
       var n=VOICE.nodes[k], q=NET.peers[k];
@@ -4593,7 +4715,6 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
     }
   }
   setInterval(function(){ try{ voiceUpdate(); }catch(e){} }, 100);
-  document.addEventListener('pointerdown', function(){ for (var k in VOICE.nodes){ var el=VOICE.nodes[k].el; if (el.paused) el.play().catch(function(){}); } }, true);
 
   // ---- no pinch or double-tap zoom: Safari ignores the viewport flag, so block the gestures too
   ['gesturestart','gesturechange','gestureend'].forEach(function(ev){ document.addEventListener(ev, function(e){ e.preventDefault(); }, {passive:false}); });
@@ -4618,19 +4739,21 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
   window.addEventListener('load', function(){ fitPoster(); setTimeout(fitPoster, 400); setTimeout(fitPoster, 1500); });
   new MutationObserver(function(){ requestAnimationFrame(fitPoster); }).observe($('lobby'), { childList:true, subtree:true, attributes:true });
   // ===================== SETTINGS =====================
-  var SET={ master:1, voice:1, shake:true, flash:true, lowq:false };
+  var SET={ master:1, voice:1, brightness:1.12, shake:true, flash:true, lowq:false };
   try{ var sv=JSON.parse(localStorage.getItem('eth-settings')||'{}'); for (var sk in sv) SET[sk]=sv[sk]; }catch(e){}
+  SET.brightness=Math.max(0.75,Math.min(1.6,+SET.brightness||1.12));
   var settingsEl=$('settings'), gearBtn=$('gear-btn'), pausedBySettings=false;
   function saveSet(){ try{ localStorage.setItem('eth-settings', JSON.stringify(SET)); }catch(e){} }
   function applySet(){
     document.body.classList.toggle('noshake', !SET.shake);
     document.body.classList.toggle('noflash', !SET.flash);
-    $('set-master').value=Math.round(SET.master*100); $('set-voice').value=Math.round(SET.voice*100);
+    $('set-master').value=Math.round(SET.master*100); $('set-voice').value=Math.round(SET.voice*100); $('set-brightness').value=Math.round(SET.brightness*100);
     $('set-shake').checked=SET.shake; $('set-flash').checked=SET.flash; $('set-lowq').checked=SET.lowq;
   }
   applySet();
   $('set-master').addEventListener('input', function(){ SET.master=this.value/100; saveSet(); });
   $('set-voice').addEventListener('input', function(){ SET.voice=this.value/100; saveSet(); });
+  $('set-brightness').addEventListener('input', function(){ SET.brightness=this.value/100; saveSet(); });
   $('set-shake').addEventListener('change', function(){ SET.shake=this.checked; saveSet(); applySet(); });
   $('set-flash').addEventListener('change', function(){ SET.flash=this.checked; saveSet(); applySet(); });
   $('set-lowq').addEventListener('change', function(){ SET.lowq=this.checked; saveSet(); sizeCanvas(); });

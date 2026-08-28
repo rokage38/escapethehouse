@@ -263,6 +263,8 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
   .compass.to-key .needle path{ fill:var(--gold); }
   .compass.to-door .needle path{ fill:var(--win); }
   .compass.to-door{ color:var(--win); }
+  .compass.to-help{ color:var(--blood-bright); }
+  .compass.to-help .needle path{ fill:var(--blood-bright); }
   .status{
     position:absolute; top:12px; left:50%; transform:translateX(-50%);
     font-family:'Space Mono', monospace; font-size:.7rem; letter-spacing:.09em;
@@ -681,6 +683,7 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
           </div>
           <div class="lobby-room hidden" id="lobby-room">
             <div class="lb-code-line">room <b id="lb-roomcode">----</b> <span id="lb-status">connecting&hellip;</span></div>
+            <button id="lb-invite" class="lb-btn">invite &mdash; send the link</button>
             <ul class="lb-roster" id="lb-roster"></ul>
             <div class="lb-host hidden" id="lb-hostbox">
               <div class="lb-mode">
@@ -808,7 +811,7 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
   var CELL=4, WALL_H=2.5, WALL_HALF=0.18;
   var COLS, ROWS;
   var grid, rooms, wallSegs, adjacency, openCells;
-  var props, propBoxes, hideSpots, keyItems, fires, traps, exitCell, exitDir, startCell;
+  var props, propBoxes, hideSpots, keyItems, fires, traps, trapdoors, exitCell, exitDir, startCell;
   var bathroom, gruesome, bodies;
 
   function inb(r,c){ return r>=0 && r<ROWS && c>=0 && c<COLS; }
@@ -1012,7 +1015,7 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
   }
 
   function placeContents(exitRoom){
-    props=[]; hideSpots=[]; keyItems=[]; propBoxes=[]; fires=[]; traps=[];
+    props=[]; hideSpots=[]; keyItems=[]; propBoxes=[]; fires=[]; traps=[]; trapdoors=[];
     bathroom=null; gruesome={}; bodies=[];
     var startRoom = rooms[0];
 
@@ -1163,6 +1166,26 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
         for (var k2=0;k2<keyItems.length;k2++) if (dist(tx,tz,keyItems[k2].x,keyItems[k2].z)<1.6){ clash=true; break; }
         if (clash) continue;
         traps.push({ x:tx, z:tz, sprung:false, yaw:Math.random()*Math.PI });
+        break;
+      }
+    }
+
+    // ---- trap doors. Rotten boards that give way under you. Alone you can
+    // claw your way out; together, a friend hauls you up in a second.
+    var tdWant=Math.max(2, (D.traps/3)|0)+1;
+    for (var td=0; td<tdWant; td++){
+      for (var tdt=0; tdt<40; tdt++){
+        var oc2=openCells[(Math.random()*openCells.length)|0];
+        var tc2=cellCenter(oc2.r,oc2.c);
+        var dx2=tc2.x+(Math.random()-0.5)*1.2, dz2=tc2.z+(Math.random()-0.5)*1.2;
+        if (dist(dx2,dz2,sc.x,sc.z) < 10) continue;
+        if (propHit(dx2,dz2,0.9) || collides(dx2,dz2,0.9)) continue;
+        var clash2=false;
+        for (var q3=0;q3<traps.length;q3++) if (dist(dx2,dz2,traps[q3].x,traps[q3].z)<2.5){ clash2=true; break; }
+        for (var q4=0;q4<trapdoors.length;q4++) if (dist(dx2,dz2,trapdoors[q4].x,trapdoors[q4].z)<6){ clash2=true; break; }
+        for (var k3=0;k3<keyItems.length;k3++) if (dist(dx2,dz2,keyItems[k3].x,keyItems[k3].z)<1.6){ clash2=true; break; }
+        if (clash2) continue;
+        trapdoors.push({ x:dx2, z:dz2, open:false });
         break;
       }
     }
@@ -2705,6 +2728,7 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
   var player, creature, startTime, running, phase;
   var huntMode, lastKnown, searchTimer, graceLeft;
   var keysHeld, hidden, hideSpot, scareT, endgame, trapped, trapTimer, trapMax;
+  var fallen=false, fallenIdx=-1, climbMash=0, fallImmune=0, helpCool=0;
   var girl;
   // the lantern gutters and can die outright when she is close
   var lightFade=1, lanternHealth=1, gutterTimer=0, nextWhisper=0, nextSlam=0;
@@ -2743,6 +2767,7 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
     huntMode=false; lastKnown=null; searchTimer=0;
     graceLeft=D.grace;
     keysHeld=0; hidden=false; hideSpot=null; scareT=0; endgame=false;
+    fallen=false; fallenIdx=-1; climbMash=0; fallImmune=0; helpCool=0;
     trapped=false; trapTimer=0; trapMax=1;
     girl={ active:false, x:0, z:0, fade:0, said:false, next:8+Math.random()*10, spoken:0 };
     initScares();
@@ -2784,6 +2809,16 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
       needleEl.style.transform='rotate('+ang2.toFixed(1)+'deg)';
       compassText.textContent = T.hidden ? 'they are hiding' : ('nearest one '+Math.round(dd)+'m');
       compassEl.className='compass to-door'; return;
+    }
+    if (NET.on){
+      var hb=null, hd=1e9;
+      for (var hk in NET.peers){ var hq=NET.peers[hk]; if (hq.fallen && hq.helpUntil && performance.now()<hq.helpUntil && !hq.dead && !hq.out){ var hdd=dist(player.x,player.z,hq.x,hq.z); if (hdd<hd){ hd=hdd; hb=hq; } } }
+      if (hb && !fallen){
+        var angH=Math.atan2(hb.x-player.x, -(hb.z-player.z))*180/Math.PI;
+        needleEl.style.transform='rotate('+angH.toFixed(1)+'deg)';
+        compassText.textContent=hb.name+' needs help '+Math.round(hd)+'m';
+        compassEl.className='compass to-help'; return;
+      }
     }
     var tx, tz, toDoor=false;
     var best=Infinity, found=null;
@@ -2827,6 +2862,7 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
 
   // ===================== INPUT =====================
   function struggle(){
+    if (fallen){ climbMash++; if (climbMash%4===0) strainSound(); return; }
     if (!trapped) return;
     trapTimer = Math.max(0, trapTimer - 0.17);
     strainSound();
@@ -2915,6 +2951,30 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
   }
 
   function updatePlayer(dt){
+    // down the trap door: you go nowhere until you climb or a friend pulls you out
+    if (fallen){
+      var tdp=trapdoors[fallenIdx]||{x:player.x,z:player.z};
+      player.x=tdp.x; player.z=tdp.z;
+      player.moving=false; player.sprinting=false;
+      promptEl.classList.remove('hidden');
+      promptEl.innerHTML = NET.on
+        ? '<kbd>E</kbd> Call for help &mdash; mash any key to climb ('+Math.max(0,26-climbMash)+')'
+        : 'You fell through &mdash; <kbd>mash any key</kbd> to climb out ('+Math.max(0,26-climbMash)+')';
+      if (actPressed && performance.now()>helpCool){
+        helpCool=performance.now()+3500;
+        knockSound(0); netSend('help',{ i:fallenIdx });
+        showToast('You bang on the boards above');
+        if (!NET.on || (isHost() && !NET.isPun)){ huntMode=true; searchTimer=0; lastKnown={x:player.x,z:player.z}; }
+      }
+      if (climbMash>=26){
+        fallen=false; fallenIdx=-1; climbMash=0; fallImmune=performance.now()+2500;
+        promptEl.classList.add('hidden');
+        showToast('You drag yourself out');
+      }
+      actPressed=false;
+      return;
+    }
+
     // pinned by a trap: nothing moves until you thrash your way out
     if (trapped){
       trapTimer -= dt;
@@ -2981,6 +3041,18 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
     } else {
       promptEl.classList.add('hidden');
     }
+    // hauling a friend out of a trap door takes priority over everything else
+    if (NET.on && !NET.isPun && !fallen && !hidden){
+      for (var rk in NET.peers){
+        var rq=NET.peers[rk];
+        if (rq.fallen && !rq.dead && !rq.out && dist(player.x,player.z,rq.x,rq.z)<1.35){
+          promptEl.classList.remove('hidden');
+          promptEl.innerHTML='<kbd>E</kbd> Pull '+rq.name+' out';
+          if (actPressed){ netSend('rescue',{ to:rk }); showToast('You haul '+rq.name+' up'); }
+          break;
+        }
+      }
+    }
     actPressed=false;
 
     if (NET.isPun && graceLeft>0) moving=false, mx=0, mz=0;
@@ -3024,6 +3096,18 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
       }
     }
 
+    // trap doors give way
+    if (!NET.isPun && !hidden && performance.now()>fallImmune){
+      for (var tdi=0; tdi<trapdoors.length; tdi++){
+        var tdd=trapdoors[tdi];
+        if (dist(player.x,player.z,tdd.x,tdd.z)<0.62){
+          tdd.open=true; fallen=true; fallenIdx=tdi; climbMash=0;
+          tdFallSound(); netSend('tdfall',{ i:tdi });
+          frame.classList.add('shaking'); setTimeout(function(){ frame.classList.remove('shaking'); }, 400);
+          break;
+        }
+      }
+    }
     // keys
     for (var i=0;i<keyItems.length && !NET.isPun;i++){
       var ki=keyItems[i];
@@ -3147,6 +3231,20 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
     var f=ctx.createBiquadFilter(); f.type='bandpass'; f.frequency.setValueAtTime(300,t); f.frequency.exponentialRampToValueAtTime(2200,t+1.4); f.Q.value=2;
     var ng=ctx.createGain(); ng.gain.setValueAtTime(0.0001,t); ng.gain.linearRampToValueAtTime(0.12,t+1.3); ng.gain.exponentialRampToValueAtTime(0.0001,t+1.5);
     n.connect(f); f.connect(ng); ng.connect(A.master); ng.connect(A.conv); n.start(t); n.stop(t+1.6);
+  }
+  function tdFallSound(){
+    if (!A.ctx) return;
+    var ctx=A.ctx, t=ctx.currentTime;
+    // boards giving way: a crack, a clatter, a heavy landing below
+    for (var i=0;i<5;i++){
+      var n=ctx.createBufferSource(); n.buffer=A.noise; n.playbackRate.value=0.8+Math.random()*0.6;
+      var f=ctx.createBiquadFilter(); f.type='bandpass'; f.frequency.value=700+Math.random()*900; f.Q.value=2;
+      var g=ctx.createGain(); g.gain.setValueAtTime(0.5,t+i*0.05); g.gain.exponentialRampToValueAtTime(0.0001,t+i*0.05+0.12);
+      n.connect(f); f.connect(g); g.connect(A.master); g.connect(A.conv); n.start(t+i*0.05); n.stop(t+i*0.05+0.15);
+    }
+    var o=ctx.createOscillator(); o.type='sine'; o.frequency.setValueAtTime(110,t+0.22); o.frequency.exponentialRampToValueAtTime(34,t+0.55);
+    var og=ctx.createGain(); og.gain.setValueAtTime(0.8,t+0.22); og.gain.exponentialRampToValueAtTime(0.0001,t+0.8);
+    o.connect(og); og.connect(A.master); og.connect(A.conv); o.start(t+0.2); o.stop(t+0.85);
   }
   function knockSound(pan){
     if (!A.ctx) return;
@@ -3536,12 +3634,13 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
     drawFires(now);
     drawKeys(now);
     drawTraps(now);
+    drawTrapdoors(now);
     drawGirl(now);
     drawScares(now);
     if (!NET.isPun && phase!=='dead') drawShadow(player.x,player.z,0.75);
     drawPeers(now);
     drawShadow(creature.x,creature.z,0.85);
-    if ((!hidden || phase==='scare') && !NET.isPun && phase!=='dead') drawPlayer(player);
+    if (fallen){ drawFallen(player, null); } else if ((!hidden || phase==='scare') && !NET.isPun && phase!=='dead') drawPlayer(player);
     drawCreature(d);
     drawMotes(now);
 
@@ -3556,6 +3655,25 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
     }
   }
 
+  function drawTrapdoors(now){
+    var ROT=[0.16,0.11,0.07], ROT2=[0.20,0.14,0.09], PIT=[0.008,0.006,0.008], RIM=[0.10,0.07,0.05];
+    for (var i=0;i<trapdoors.length;i++){
+      var td=trapdoors[i];
+      if (Math.abs(td.x-player.x)>17 || Math.abs(td.z-player.z)>17) continue;
+      if (td.open){
+        drawCube(trsModel(td.x,0.015,td.z,0, 0.70,0.012,0.70), PIT, true);
+        drawCube(trsModel(td.x-0.72,0.05,td.z,0, 0.06,0.05,0.78), RIM, false);
+        drawCube(trsModel(td.x+0.72,0.05,td.z,0, 0.06,0.05,0.78), RIM, false);
+        drawCube(trsModel(td.x,0.05,td.z-0.72,0, 0.78,0.05,0.06), RIM, false);
+        drawCube(trsModel(td.x,0.05,td.z+0.72,0, 0.78,0.05,0.06), RIM, false);
+        // splintered board hanging into the dark
+        drawCube(trsModel(td.x+0.3,0.0,td.z+0.2,0.5, 0.09,0.02,0.5), ROT2, false);
+      } else {
+        // it reads as ordinary floor unless you look: boards a shade darker, sagging
+        for (var b2=0;b2<4;b2++) drawCube(trsModel(td.x-0.48+b2*0.32, 0.012, td.z, 0, 0.15,0.012,0.68), b2%2?ROT:ROT2, false);
+      }
+    }
+  }
   function drawTraps(now){
     for (var i=0;i<traps.length;i++){
       var tp=traps[i];
@@ -3583,6 +3701,16 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
     }
   }
 
+  // a body half-through the floor: head and grasping hands above the boards
+  function drawFallen(pl, tint){
+    var t=performance.now()/1000;
+    var bob=Math.sin(t*3+pl.x)*0.03;
+    drawCube(trsModel(pl.x,0.30+bob,pl.z,pl.yaw,0.30,0.30,0.29), C_SKIN, false);
+    drawCube(trsModel(pl.x,0.46+bob,pl.z,pl.yaw,0.32,0.10,0.31), C_HAIR, false);
+    var hl=rotY(-0.42,0,pl.yaw), hr=rotY(0.42,0.1,pl.yaw);
+    drawCube(trsModel(pl.x+hl[0],0.10+Math.abs(Math.sin(t*4))*0.08,pl.z+hl[1],pl.yaw,0.12,0.12,0.12), C_SKIN, false);
+    drawCube(trsModel(pl.x+hr[0],0.10+Math.abs(Math.cos(t*4))*0.08,pl.z+hr[1],pl.yaw,0.12,0.12,0.12), C_SKIN, false);
+  }
   function drawGirl(now){
     if (!girl.active || girl.fade<=0.02) return;
     var f=girl.fade;
@@ -4054,6 +4182,7 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
     NET.me=uid(); NET.code=code; NET.role=asHost?'host':'peer'; NET.peers={}; NET.on=true; NET.hostSeen=false;
     NET.sb=NET.sb||window.supabase.createClient(SB_URL,SB_KEY);
     lbJoin.classList.add('hidden'); lbRoom.classList.remove('hidden'); startBtn.style.display='none';
+    try{ history.replaceState(null,'','#r='+code); }catch(e){}
     lbRoomcode.textContent=code; lbStatus.textContent='connecting…';
     lbHostbox.classList.toggle('hidden', !asHost);
     var ch=NET.sb.channel('house-'+code, { config:{ presence:{ key:NET.me }, broadcast:{ self:false } } });
@@ -4087,7 +4216,7 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
     });
     ch.on('broadcast',{event:'start'},function(m){ if (isHost()) return; if (m.payload.late && NET.started) return; netStart(m.payload); });
     ch.on('broadcast',{event:'state'},function(m){ var q=NET.peers[m.payload.from]; if (!q) return; var pl=m.payload;
-      q.tx=pl.x; q.tz=pl.z; q.tyaw=pl.yaw; q.moving=pl.m; q.sprinting=pl.s; q.hidden=pl.h; q.role=pl.r;
+      q.tx=pl.x; q.tz=pl.z; q.tyaw=pl.yaw; q.moving=pl.m; q.sprinting=pl.s; q.hidden=pl.h; q.role=pl.r; q.fallen=!!pl.f;
       if (!q.seenAt || Math.abs(q.x-q.tx)>6 || Math.abs(q.z-q.tz)>6){ q.x=q.tx; q.z=q.tz; q.yaw=q.tyaw; }
       q.seenAt=performance.now();
       if (pl.r==='pun') NET.remoteCreature={ x:pl.x, z:pl.z, yaw:pl.yaw, animT:pl.a, hunt:pl.hu }; });
@@ -4098,8 +4227,12 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
     ch.on('broadcast',{event:'round'},function(m){ netRoundEnd(m.payload); });
     ch.on('broadcast',{event:'lobby'},function(m){ if (!isHost()) backToLobby(); });
     ch.on('broadcast',{event:'voice'},function(m){ voice(m.payload.k,{vol:1.0,minGap:0,cool:0,local:true}); });
-    ch.on('broadcast',{event:'dead'},function(m){ var q=NET.peers[m.payload.from]; if (q){ q.dead=true; showToast('He got '+q.name, true); } });
-    ch.on('broadcast',{event:'out'},function(m){ var q=NET.peers[m.payload.from]; if (q){ q.out=true; showToast(q.name+' made it out'); } });
+    ch.on('broadcast',{event:'dead'},function(m){ var q=NET.peers[m.payload.from]; if (q){ q.dead=true; showToast('He got '+q.name+' — '+Math.max(0,survivorsLeft())+' still inside', true); } });
+    ch.on('broadcast',{event:'out'},function(m){ var q=NET.peers[m.payload.from]; if (q){ q.out=true; showToast(q.name+' made it out — '+Math.max(0,survivorsLeft())+' still inside'); } });
+    ch.on('broadcast',{event:'tdfall'},function(m){ var q=NET.peers[m.payload.from]; if (typeof m.payload.i==='number' && trapdoors[m.payload.i]) trapdoors[m.payload.i].open=true; if (q) showToast(q.name+' fell through the floor', true); });
+    ch.on('broadcast',{event:'help'},function(m){ var q=NET.peers[m.payload.from]; if (q){ q.helpUntil=performance.now()+16000; knockSound(Math.max(-1,Math.min(1,(q.x-player.x)/6))); if (!NET.isPun) showToast(q.name+' is calling for help'); else showToast('Banging, from under the boards…', true); }
+      if (isHost() && !NET.isPun && NET.mode==='coop' && q){ huntMode=true; searchTimer=0; lastKnown={x:q.x,z:q.z}; } });
+    ch.on('broadcast',{event:'rescue'},function(m){ if (m.payload.to===NET.me && fallen){ fallen=false; fallenIdx=-1; climbMash=0; fallImmune=performance.now()+2500; promptEl.classList.add('hidden'); showToast('Pulled out — go'); } });
     ch.on('broadcast',{event:'trap'},function(m){ var q=NET.peers[m.payload.from]; if (q) showToast((q.name)+' is in a trap', true); if (typeof m.payload.i==='number' && traps[m.payload.i]) traps[m.payload.i].sprung=true; if (isHost() && !NET.isPun){ huntMode=true; searchTimer=0; lastKnown={x:m.payload.x,z:m.payload.z}; } });
     ch.subscribe(function(status){
       if (status==='SUBSCRIBED'){ lbStatus.textContent=asHost?'you are the host':'in'; ch.track({ name:NET.name, host:asHost }); }
@@ -4111,6 +4244,7 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
     voiceOff();
     NET.on=false; NET.role='solo'; NET.chan=null; NET.peers={}; NET.isPun=false; NET.started=false; NET.remoteCreature=null;
     lbJoin.classList.remove('hidden'); lbRoom.classList.add('hidden'); netList.textContent=''; startBtn.style.display='';
+    try{ history.replaceState(null,'',location.pathname); }catch(e){}
   }
   var lbReady=$('lb-ready'), lbStart=$('lb-start');
   NET.ready=false;
@@ -4138,6 +4272,22 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
   }
   $('lb-create').addEventListener('click', function(){ joinRoom(roomCode(), true); voiceStart(); });
   $('lb-join').addEventListener('click', function(){ var c=(lbCode.value||'').toUpperCase().replace(/[^A-Z0-9]/g,''); if (c.length===4){ joinRoom(c,false); voiceStart(); } else lbCode.focus(); });
+  $('lb-invite').addEventListener('click', function(){
+    var url=location.origin+location.pathname+'#r='+NET.code;
+    var msg='Come into the house. '+url;
+    if (navigator.share){ navigator.share({ title:'Escape the House', text:msg, url:url }).catch(function(){}); }
+    else if (navigator.clipboard){ navigator.clipboard.writeText(url).then(function(){ lobbyPing('link copied — send it to them'); }).catch(function(){}); }
+  });
+  // arriving through an invite link: the code is filled in, and if we know your
+  // name you walk straight into the room
+  (function(){
+    var m2=(location.hash||'').match(/r=([A-Z0-9]{4})/i);
+    if (!m2) return;
+    var code=m2[1].toUpperCase();
+    lbCode.value=code;
+    if ((lbName.value||'').trim()){ joinRoom(code,false); document.addEventListener('pointerdown', function once(){ document.removeEventListener('pointerdown', once); voiceStart(); }); }
+    else { lbName.focus(); lobbyPing('type a name, then hit join'); }
+  })();
   $('lb-leave').addEventListener('click', leaveRoom);
   $('lb-start').addEventListener('click', function(){
     var mode=document.querySelector('input[name=lbmode]:checked').value;
@@ -4149,12 +4299,14 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
     var kk=[], tt=[];
     for (var i=0;i<keyItems.length;i++) if (keyItems[i].taken) kk.push(i);
     for (var j=0;j<traps.length;j++) if (traps[j].sprung) tt.push(j);
-    return { k:kk, t:tt, e:endgame };
+    var dd2=[]; for (var q5=0;q5<trapdoors.length;q5++) if (trapdoors[q5].open) dd2.push(q5);
+    return { k:kk, t:tt, e:endgame, d:dd2 };
   }
   function applyWorld(w){
     if (!w) return;
     (w.k||[]).forEach(function(i){ if (keyItems[i] && !keyItems[i].taken){ keyItems[i].taken=true; keysHeld++; } });
     (w.t||[]).forEach(function(j){ if (traps[j]) traps[j].sprung=true; });
+    (w.d||[]).forEach(function(j){ if (trapdoors[j]) trapdoors[j].open=true; });
     if (w.e){ endgame=true; graceLeft=0; }
     updateKeysHud();
   }
@@ -4195,7 +4347,7 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
       q.animT += (q.moving?(q.sprinting?12.5:8.0):0)*0.016; }
     if (now-NET.lastSend<66) return;
     NET.lastSend=now;
-    var pl={ x:+player.x.toFixed(2), z:+player.z.toFixed(2), yaw:+player.yaw.toFixed(2), m:player.moving, s:player.sprinting, h:hidden, r:myRole() };
+    var pl={ x:+player.x.toFixed(2), z:+player.z.toFixed(2), yaw:+player.yaw.toFixed(2), m:player.moving, s:player.sprinting, h:hidden, r:myRole(), f:fallen };
     if (VOICE.stream) VOICE.stream.getAudioTracks().forEach(function(t){ t.enabled=!voiceMuted && !NET.isPun; });
     if (NET.isPun){ pl.a=+creature.animT.toFixed(2); pl.hu=huntMode; }
     netSend('state', pl);
@@ -4203,6 +4355,7 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
     // the roster on the HUD
     var h='';
     for (var k2 in NET.peers){ var q2=NET.peers[k2]; h+='<div class="'+(q2.out?'out':(q2.dead?'dead':''))+'">'+q2.name+(q2.role==='pun'?' — PUN':'')+'</div>'; }
+    if (NET.voiceLine) h+='<div style="opacity:.6;margin-top:4px">'+NET.voiceLine+'</div>';
     netList.innerHTML=h;
   }
   function survivorsLeft(){
@@ -4227,14 +4380,20 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
     running=false; phase='over';
     frame.classList.remove('shaking','scaring'); dreadWash.style.opacity=0; flashEl.classList.remove('fire'); promptEl.classList.add('hidden');
     var outs=m.outs||0, who=(m.names&&m.names.length)?m.names.join(', '):'';
+    // one summary everyone sees: who got out, who he got, who was the monster
+    var lines=[];
+    function outcomeOf(name, isOut, isPun){ return '<span style="opacity:.75">'+name+'</span> — '+(isPun?'was Pun':(isOut?'<b style="color:#8fbf8a">escaped</b>':'<b style="color:#c25a5a">caught</b>')); }
+    lines.push(outcomeOf(NET.name+' (you)', NET.out, NET.isPun));
+    for (var pk in NET.peers){ var pq=NET.peers[pk]; lines.push(outcomeOf(pq.name, pq.out, pq.role==='pun')); }
+    var summary='<span style="display:block;margin-top:10px;font-size:.85em;line-height:1.7">'+lines.join('<br>')+(isHost()?'':'<br><i style="opacity:.6">the host brings everyone back to the lobby</i>')+'</span>';
     loseOverlay.classList.add('hidden'); winOverlay.classList.add('hidden');
     if (NET.isPun){
-      if (outs===0){ winOverlay.querySelector('.end-title').textContent='YOU GOT THEM ALL'; winSub.textContent='Nobody got out. Pun go mad.'; winOverlay.classList.remove('hidden'); }
-      else { loseOverlay.querySelector('.end-title').textContent='THEY GOT OUT'; loseSub.textContent=who+' got past you.'; loseOverlay.classList.remove('hidden'); }
+      if (outs===0){ winOverlay.querySelector('.end-title').textContent='YOU GOT THEM ALL'; winSub.innerHTML='Nobody got out. Pun go mad.'+summary; winOverlay.classList.remove('hidden'); }
+      else { loseOverlay.querySelector('.end-title').textContent='THEY GOT OUT'; loseSub.innerHTML=who+' got past you.'+summary; loseOverlay.classList.remove('hidden'); }
     } else if (NET.out){
-      winOverlay.querySelector('.end-title').textContent='You Made It Out'; winSub.textContent = outs>1 ? ('Out with '+(outs-1)+' of the others.') : 'The only one who found the door.'; winOverlay.classList.remove('hidden');
+      winOverlay.querySelector('.end-title').textContent='You Made It Out'; winSub.innerHTML = (outs>1 ? ('Out with '+(outs-1)+' of the others.') : 'The only one who found the door.')+summary; winOverlay.classList.remove('hidden');
     } else {
-      loseOverlay.querySelector('.end-title').textContent='HE HAS YOU'; loseSub.textContent = outs>0 ? (who+' made it out. You did not.') : 'None of you found the door.'; loseOverlay.classList.remove('hidden');
+      loseOverlay.querySelector('.end-title').textContent='HE HAS YOU'; loseSub.innerHTML = (outs>0 ? (who+' made it out. You did not.') : 'None of you found the door.')+summary; loseOverlay.classList.remove('hidden');
     }
   }
   setInterval(function(){ try{ netRoundCheck(); }catch(e){} }, 600);
@@ -4266,6 +4425,7 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
     for (var k in NET.peers){
       var q=NET.peers[k]; i++;
       if (q.role==='pun' || q.dead || q.out || q.hidden || !q.seenAt) continue;
+      if (q.fallen){ drawFallen(q, PEER_TINTS[i%PEER_TINTS.length]); continue; }
       computePose(q);
       drawShadow(q.x,q.z,0.75);
       drawPlayer(q, PEER_TINTS[i%PEER_TINTS.length]);
@@ -4292,7 +4452,7 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
   // Microphones go peer to peer over WebRTC; the room channel only carries the
   // handshake. Each friend's voice is placed in the house: you hear them by how
   // close they are, and from which side.
-  var VOICE={ on:false, stream:null, pcs:{}, nodes:{} };
+  var VOICE={ on:false, stream:null, pcs:{}, nodes:{}, relay:{}, state:{}, denied:false };
   // STUN finds a direct path; the relay is the fallback for phone networks that
   // won't allow one (the free Open Relay tier — swap for your own TURN if it fills up)
   var RTC_CFG={ iceServers:[
@@ -4319,7 +4479,7 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
       VOICE.stream=st; VOICE.on=true; setMuted(false); voiceStatus();
       for (var k in VOICE.pcs) voiceDrop(k);
       for (var k2 in NET.peers) voiceConnect(k2);
-    }).catch(function(){ lbMicNote.textContent='microphone permission was refused — tap the mic button to try again'; });
+    }).catch(function(){ VOICE.denied=true; voiceStatus(); });
   }
   lbMic.addEventListener('click', function(){ if (!VOICE.on) voiceStart(); else setMuted(!voiceMuted); });
   function voiceOff(){
@@ -4327,32 +4487,52 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
     if (VOICE.stream){ VOICE.stream.getTracks().forEach(function(t){ t.stop(); }); VOICE.stream=null; }
     for (var k in VOICE.pcs) voiceDrop(k);
   }
-  function voiceDrop(k){
-    if (VOICE.pcs[k]){ try{ VOICE.pcs[k].close(); }catch(e){} delete VOICE.pcs[k]; }
+  function voiceDrop(k, keepRelay){
+    if (!keepRelay) delete VOICE.relay[k];
+    delete VOICE.state[k];
+    if (VOICE.pcs[k]){ try{ VOICE.pcs[k].onconnectionstatechange=null; VOICE.pcs[k].close(); }catch(e){} delete VOICE.pcs[k]; }
     if (VOICE.nodes[k]){ try{ VOICE.nodes[k].el.srcObject=null; VOICE.nodes[k].el.remove(); }catch(e){} delete VOICE.nodes[k]; }
   }
   function voicePC(k){
     if (VOICE.pcs[k]) return VOICE.pcs[k];
-    var pc=new RTCPeerConnection(RTC_CFG); VOICE.pcs[k]=pc;
+    var cfg={ iceServers:RTC_CFG.iceServers };
+    if (VOICE.relay[k]) cfg.iceTransportPolicy='relay';   // the direct path failed once; go through the relay
+    var pc=new RTCPeerConnection(cfg); VOICE.pcs[k]=pc; VOICE.state[k]='connecting';
     if (VOICE.stream) VOICE.stream.getTracks().forEach(function(t){ pc.addTrack(t, VOICE.stream); });
     else { try{ pc.addTransceiver('audio',{direction:'recvonly'}); }catch(e){} }
     pc.onicecandidate=function(e){ if (e.candidate) netSend('rtc',{ to:k, kind:'ice', c:JSON.parse(JSON.stringify(e.candidate)) }); };
     pc.ontrack=function(e){ voiceAttach(k, e.streams[0]); };
-    pc.onconnectionstatechange=function(){ voiceStatus(); if (pc.connectionState==='failed' || pc.connectionState==='closed'){ voiceDrop(k); if (VOICE.on) setTimeout(function(){ if (NET.peers[k] && VOICE.on) voiceConnect(k); }, 2500); } };
+    pc.onconnectionstatechange=function(){
+      var st=pc.connectionState;
+      if (st==='connected') VOICE.state[k] = VOICE.nodes[k] ? 'linked' : 'linked (silent)';
+      voiceStatus();
+      if (st==='failed' || st==='closed'){
+        VOICE.state[k]='failed';
+        var wasRelay=!!VOICE.relay[k];
+        voiceDrop(k);
+        // first failure: try again forced through the relay; after that keep retrying slowly
+        if (!wasRelay) VOICE.relay[k]=true;
+        if (NET.peers[k]) setTimeout(function(){ if (NET.peers[k]) voiceConnect(k, true); }, wasRelay?6000:800);
+      }
+    };
+    pc.oniceconnectionstatechange=function(){
+      if (pc.iceConnectionState==='disconnected') VOICE.state[k]='reconnecting…';
+      voiceStatus();
+    };
+    // a connection stuck on 'checking' for 9s counts as failed — some networks just eat it
+    setTimeout(function(){ if (VOICE.pcs[k]===pc && pc.connectionState!=='connected'){ try{ pc.close(); }catch(e){} if (pc.onconnectionstatechange) pc.onconnectionstatechange(); } }, 9000);
     return pc;
   }
-  function voiceConnect(k){
-    // the lower id makes the offer, so both sides never offer at once; if the
-    // other side has the lower id, ask them to
-    if (!(NET.me<k)){ netSend('rtc',{ to:k, kind:'call' }); return; }
-    voiceDrop(k);
+  function voiceConnect(k, keepRelay){
+    if (!(NET.me<k)){ netSend('rtc',{ to:k, kind:'call', relay:!!VOICE.relay[k] }); return; }
+    voiceDrop(k, keepRelay);
     var pc=voicePC(k);
     pc.createOffer().then(function(o){ return pc.setLocalDescription(o); }).then(function(){ netSend('rtc',{ to:k, kind:'offer', sdp:{type:pc.localDescription.type, sdp:pc.localDescription.sdp} }); }).catch(function(){});
   }
   function voiceSignal(m){
     if (m.to!==NET.me) return;
     var k=m.from;
-    if (m.kind==='call'){ if (NET.me<k) voiceConnect(k); }
+    if (m.kind==='call'){ if (m.relay) VOICE.relay[k]=true; if (NET.me<k) voiceConnect(k, true); }
     else if (m.kind==='offer'){
       voiceDrop(k);
       var pc=voicePC(k);
@@ -4373,14 +4553,22 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
     el.style.display='none'; document.body.appendChild(el);
     var tryPlay=function(){ el.play().catch(function(){ setTimeout(tryPlay, 800); }); }; tryPlay();
     VOICE.nodes[k]={ el:el, stream:stream, vol:1 };
+    if (VOICE.state[k] && VOICE.state[k].indexOf('linked')===0) VOICE.state[k]='linked';
     voiceStatus();
   }
   function voiceStatus(){
-    if (!VOICE.on) return;
-    var n=0, c=0; for (var k in VOICE.pcs){ n++; if (VOICE.pcs[k].connectionState==='connected') c++; }
-    var heard=Object.keys(VOICE.nodes).length;
-    lbMicNote.textContent = n ? ('mic on — linked to '+c+' of '+n+(heard<c?' (waiting for their sound)':'')) : 'mic on — waiting for others';
+    // one line per friend, in the lobby note and on the in-game roster
+    var parts=[];
+    for (var k in NET.peers){
+      var st = VOICE.state[k] || (VOICE.on ? 'connecting' : '');
+      if (VOICE.relay[k] && st==='linked') st='linked via relay';
+      if (st) parts.push(NET.peers[k].name+': '+st);
+    }
+    if (!VOICE.on) lbMicNote.textContent = VOICE.denied ? 'microphone was refused — tap the mic button to try again' : 'voice starts when you join · co-op hears everyone, playing Pun whispers when close';
+    else lbMicNote.textContent = parts.length ? ('mic on · '+parts.join(' · ')) : 'mic on — waiting for others';
+    NET.voiceLine = VOICE.on ? parts.join('<br>') : '';
   }
+  setInterval(voiceStatus, 2000);
   function voiceUpdate(){
     for (var k in VOICE.nodes){
       var n=VOICE.nodes[k], q=NET.peers[k];
@@ -4405,6 +4593,7 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
     }
   }
   setInterval(function(){ try{ voiceUpdate(); }catch(e){} }, 100);
+  document.addEventListener('pointerdown', function(){ for (var k in VOICE.nodes){ var el=VOICE.nodes[k].el; if (el.paused) el.play().catch(function(){}); } }, true);
 
   // ---- no pinch or double-tap zoom: Safari ignores the viewport flag, so block the gestures too
   ['gesturestart','gesturechange','gestureend'].forEach(function(ev){ document.addEventListener(ev, function(e){ e.preventDefault(); }, {passive:false}); });

@@ -1,6 +1,6 @@
-// Escape the House — offline cache. Bump VERSION whenever index.html changes.
-var VERSION='eth-v9';
-var FILES=['./','./index.html','./manifest.webmanifest','./icon-192.png','./icon-512.png','./icon-maskable-512.png','./apple-touch-icon.png'];
+// MISSING: PUN — offline cache. Bump VERSION whenever index.html changes.
+var VERSION='mp-merge-1';
+var FILES=['./','./index.html','./manifest.webmanifest','./icon-missing-pun-192.png','./icon-missing-pun-512.png','./apple-touch-icon-missing-pun.png'];
 self.addEventListener('install', function(e){
   e.waitUntil(caches.open(VERSION).then(function(c){ return c.addAll(FILES); }).then(function(){ return self.skipWaiting(); }));
 });
